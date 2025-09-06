@@ -18,23 +18,6 @@ class ProductAPI {
       const sampleProducts = [
         {
           id: 1,
-          name: 'Fresh Tomatoes',
-          price: 40,
-          quantity: 100,
-          stock: 100,
-          unit: 'kg',
-          supplierId: 1,
-          supplierName: 'Green Valley Farms',
-          supplierRating: 4.5,
-          category: 'vegetables',
-          description: 'Fresh organic tomatoes from Green Valley Farms',
-          isOrganic: true,
-          image: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400&h=300&fit=crop',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 2,
           name: 'Red Onions',
           price: 30,
           quantity: 75,
@@ -47,23 +30,6 @@ class ProductAPI {
           description: 'Premium red onions from Farm Fresh Co',
           isOrganic: false,
           image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 3,
-          name: 'Organic Carrots',
-          price: 60,
-          quantity: 80,
-          stock: 80,
-          unit: 'kg',
-          supplierId: 1,
-          supplierName: 'Green Valley Farms',
-          supplierRating: 4.5,
-          category: 'vegetables',
-          description: 'Organic carrots grown without pesticides',
-          isOrganic: true,
-          image: 'https://images.unsplash.com/photo-1447175008436-170170e0a121?w=400&h=300&fit=crop',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
