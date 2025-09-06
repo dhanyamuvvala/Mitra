@@ -1,15 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useCart } from '../contexts/CartContext'
+import { useProducts } from '../contexts/ProductContext'
 import { Search, Filter, Store, Star, MapPin, MessageSquare } from 'lucide-react'
+import realTimeSync from '../utils/realTimeSync'
 import Negotiation from '../components/Bargain/Negotiation'
 import ReviewSystem from '../components/Rating/ReviewSystem'
-import { productDatabase } from '../data/userDatabase'
-
-// Filter only organic products and transform to match the expected format - but set to empty for manual addition
-const mockProducts = []
-
 const Organic = () => {
   const { addToCart } = useCart()
+  const { products: allProducts, loading: productsLoading } = useProducts()
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [showFilters, setShowFilters] = useState(false)
@@ -22,8 +20,57 @@ const Organic = () => {
   const [minRating, setMinRating] = useState(0)
   const [organicOnly, setOrganicOnly] = useState(false)
   const [fssaiOnly, setFssaiOnly] = useState(false)
+  const [products, setProducts] = useState([])
 
-  const filteredProducts = mockProducts.filter(product => {
+  useEffect(() => {
+    const loadOrganicProducts = () => {
+      try {
+        console.log('All products for organic page:', allProducts)
+        if (allProducts && allProducts.length > 0) {
+          const organicProducts = allProducts
+            .filter(product => product.isOrganic === true || product.organic === true)
+            .map(product => ({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.image,
+              supplier: product.supplierName,
+              supplierId: product.supplierId,
+              description: product.description || `Fresh organic ${product.name} from ${product.supplierName}`,
+              rating: product.supplierRating || 4.5,
+              reviews: Math.floor(Math.random() * 50) + 10,
+              quantity: `${product.stock || product.quantity || 0} ${product.unit || 'kg'}`,
+              availableStock: product.stock || product.quantity || 0,
+              unit: product.unit || 'kg',
+              certifications: ['Organic', 'FSSAI']
+            }))
+          console.log('Filtered organic products:', organicProducts)
+          setProducts(organicProducts)
+        } else {
+          setProducts([])
+        }
+      } catch (error) {
+        console.error('Error loading organic products:', error)
+        setProducts([])
+      }
+    }
+
+    loadOrganicProducts()
+    
+    // Subscribe to product updates for real-time sync
+    const unsubscribe = realTimeSync.subscribe('product_update', (data) => {
+      console.log('Product update received in Organic page:', data)
+      if (data && data.action) {
+        setTimeout(() => {
+          loadOrganicProducts()
+        }, 200)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [allProducts])
+
+  const filteredProducts = products.filter(product => {
     const nameMatches = product.name.toLowerCase().includes(search.toLowerCase()) ||
                        product.supplier.toLowerCase().includes(search.toLowerCase())
     const priceMatches = product.price >= minPrice && product.price <= maxPrice
@@ -47,37 +94,40 @@ const Organic = () => {
     }
   })
 
-
-
   const startBargain = (product) => {
     setSelectedProduct(product)
     setShowNegotiation(true)
   }
 
   const buyNow = (product) => {
+    // Check stock availability
+    if (product.availableStock <= 0) {
+      alert('This product is out of stock!')
+      return
+    }
+    
     // Add product to cart instead of direct purchase
     const cartItem = {
       id: product.id,
       name: product.name,
-      price: `₹${product.price}`,
+      price: product.price,
       image: product.image,
       supplier: product.supplier,
-      quantity: 1
+      supplierId: product.supplierId,
+      quantity: 1,
+      unit: product.unit
     }
     addToCart(cartItem)
     alert(`${product.name} added to cart!`)
-    // Add a rating when user buys a product
-    // addRating(4.5) // This would normally be based on user's actual rating
   }
 
   const handleReviewSubmit = (review) => {
-    // Here you would typically save the review to a database
     console.log('New review submitted:', review)
   }
 
-  const totalFarmers = new Set(mockProducts.map(p => p.supplier)).size
-  const organicProducts = mockProducts.filter(p => p.certifications.includes('Organic')).length
-  const avgRating = (mockProducts.reduce((sum, p) => sum + p.rating, 0) / mockProducts.length).toFixed(1)
+  const totalFarmers = new Set(products.map(p => p.supplier)).size
+  const organicProducts = products.filter(p => p.certifications.includes('Organic')).length
+  const avgRating = products.length > 0 ? (products.reduce((sum, p) => sum + p.rating, 0) / products.length).toFixed(1) : '0'
 
   return (
     <div className="max-w-7xl mx-auto py-12 px-4">
@@ -163,38 +213,70 @@ const Organic = () => {
         {/* Product List */}
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {sortedProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            {sortedProducts.map(product => {
+              const isOutOfStock = product.availableStock <= 0
+              return (
+              <div key={product.id} className={`rounded-lg shadow-md overflow-hidden transition-shadow ${
+                isOutOfStock 
+                  ? 'bg-gray-100 opacity-60' 
+                  : 'bg-white hover:shadow-lg'
+              }`}>
                 <img 
                   src={product.image} 
                   alt={product.name}
-                  className="w-full h-48 object-cover"
+                  className={`w-full h-48 object-cover ${
+                    isOutOfStock ? 'grayscale' : ''
+                  }`}
                 />
-                <div className="p-6">
+                <div className={`p-6 ${isOutOfStock ? 'text-gray-500' : ''}`}>
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold">{product.name}</h3>
+                    <h3 className={`text-xl font-bold ${isOutOfStock ? 'text-gray-600' : ''}`}>{product.name}</h3>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">₹{product.price}/kg</div>
-                      <div className="text-sm text-gray-600">{product.quantity} available</div>
+                      <div className={`text-2xl font-bold ${isOutOfStock ? 'text-gray-500' : 'text-green-600'}`}>₹{product.price}/{product.unit}</div>
+                      <div className={`text-sm font-medium ${
+                        product.availableStock <= 0 
+                          ? 'text-red-600' 
+                          : product.availableStock < 10 
+                            ? 'text-orange-600' 
+                            : 'text-gray-600'
+                      }`}>
+                        {product.availableStock <= 0 
+                          ? 'Out of Stock' 
+                          : `${product.availableStock} ${product.unit} available`
+                        }
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-gray-600 mb-4">{product.description}</p>
+                  <p className={`mb-4 ${isOutOfStock ? 'text-gray-400' : 'text-gray-600'}`}>{product.description}</p>
+
+                  {/* Out of Stock Notification */}
+                  {isOutOfStock && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-700 font-medium">
+                        📧 We will notify you when this product is available
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm">{product.rating}</span>
-                      <span className="text-sm text-gray-500">({product.reviews})</span>
+                      <Star className={`w-4 h-4 ${isOutOfStock ? 'text-gray-400' : 'text-yellow-400'}`} />
+                      <span className={`text-sm ${isOutOfStock ? 'text-gray-400' : ''}`}>{product.rating}</span>
+                      <span className={`text-sm ${isOutOfStock ? 'text-gray-400' : 'text-gray-500'}`}>({product.reviews})</span>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className={`text-sm ${isOutOfStock ? 'text-gray-400' : 'text-gray-500'}`}>
                       by {product.supplier}
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-4">
                     {product.certifications.map(cert => (
-                      <span key={cert} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      <span key={cert} className={`text-xs px-2 py-1 rounded ${
+                        isOutOfStock 
+                          ? 'bg-gray-200 text-gray-500' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
                         {cert}
                       </span>
                     ))}
@@ -202,22 +284,35 @@ const Organic = () => {
 
                   <div className="flex gap-2">
                     <button 
-                      className="flex-1 btn-primary"
+                      className={`flex-1 ${product.availableStock <= 0 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'btn-primary'}`}
                       onClick={() => buyNow(product)}
+                      disabled={product.availableStock <= 0}
                     >
-                      Add to Cart
+                      {product.availableStock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                     </button>
                     <button 
-                      className="btn-secondary flex items-center gap-1"
+                      className={`flex items-center gap-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                        isOutOfStock 
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                          : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      }`}
                       onClick={() => startBargain(product)}
+                      disabled={product.availableStock <= 0}
                     >
                       <MessageSquare className="w-4 h-4" />
                       Bargain
                     </button>
 
                     <button 
-                      className="btn-secondary flex items-center gap-1"
+                      className={`flex items-center gap-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                        isOutOfStock 
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                          : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      }`}
                       onClick={() => setSelectedProductForReview(product)}
+                      disabled={isOutOfStock}
                     >
                       <Star className="w-4 h-4" />
                       Reviews
@@ -225,7 +320,8 @@ const Organic = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -261,9 +357,11 @@ const Organic = () => {
             <ReviewSystem
               itemId={selectedProductForReview.id}
               itemName={selectedProductForReview.name}
-              currentRating={0}
-              currentReviews={[]}
-              onReviewSubmit={handleReviewSubmit}
+              supplierId={selectedProductForReview.supplierId}
+              supplierName={selectedProductForReview.supplier}
+              onClose={() => setSelectedProductForReview(null)}
+              onSubmit={handleReviewSubmit}
+              readOnly={true}
             />
           </div>
         </div>

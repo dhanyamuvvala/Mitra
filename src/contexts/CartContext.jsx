@@ -21,13 +21,13 @@ export const CartProvider = ({ children }) => {
       if (existingItem) {
         const newCart = prevCart.map(cartItem =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            ? { ...cartItem, quantity: cartItem.quantity + (item.quantity || 1) }
             : cartItem
         )
         console.log('CartContext: Updated existing item, new cart:', newCart)
         return newCart
       }
-      const newCart = [...prevCart, { ...item, quantity: 1 }]
+      const newCart = [...prevCart, { ...item, quantity: item.quantity || 1 }]
       console.log('CartContext: Added new item, new cart:', newCart)
       return newCart
     })

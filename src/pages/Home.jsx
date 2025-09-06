@@ -73,11 +73,6 @@ const Home = () => {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
-            <div className="mb-6">
-              <span className="inline-block px-4 py-2 bg-yellow-400 text-green-900 rounded-full text-sm font-semibold mb-4">
-                🌱 Farm to Table Excellence
-              </span>
-            </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Connect with <span className="text-yellow-300">Trusted</span><br />
               <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
@@ -182,152 +177,131 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Partner Logos */}
-          <div className="text-center">
-            <p className="text-gray-500 mb-6 font-medium">Trusted Partners & Suppliers</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-green-600">🥬 Fresh Farms</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-orange-600">🍅 Organic Valley</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-blue-600">🐟 Sea Fresh</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-purple-600">🌾 Grain Masters</span>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Quick Actions Section */}
+      {/* Platform Benefits Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Get Started Today
+              Platform Benefits
             </h2>
             <p className="text-xl text-gray-600">
-              Choose your path and start connecting with the food supply chain
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                        <Link to="/find-items" className="group">
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-8 rounded-lg text-center hover:shadow-xl transition-shadow duration-300">
-              <div className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-  {/* Add your icon content here */}
-</div>
-                <h3 className="text-2xl font-bold mb-2">Find Items</h3>
-                <p className="text-purple-100">
-                  Search for supplies and items across all categories
-                </p>
-              </div>
-            </Link>
-
-            <Link to="/suppliers" className="group">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-lg text-center hover:shadow-xl transition-shadow duration-300">
-                <div className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  {/* Add your icon content here */}
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Find Nearby Suppliers</h3>
-                <p className="text-blue-100">
-                  Discover verified suppliers in your area with advanced filtering
-                </p>
-              </div>
-            </Link>
-
-            <Link to="/flash-sales" className="group">
-              <div className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white p-8 rounded-lg text-center hover:shadow-xl transition-shadow duration-300">
-                <Zap className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" />
-                <h3 className="text-2xl font-bold mb-2">Flash Sales</h3>
-                <p className="text-yellow-100">
-                  Grab time-limited offers and special deals from suppliers
-                </p>
-              </div>
-            </Link>
-
-            <Link to="/organic" className="group">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-lg text-center hover:shadow-xl transition-shadow duration-300">
-                <Store className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" />
-                <h3 className="text-2xl font-bold mb-2">Organic Marketplace</h3>
-                <p className="text-green-100">
-                  Connect directly with farmers for organic produce
-                </p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-
-      {/* Upcoming Events Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Upcoming Events
-            </h2>
-            <p className="text-xl text-gray-600">
-              Stay updated with the latest events and opportunities
+              Discover the advantages of using Vendor Mitra for your supply chain needs
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="bg-yellow-500 text-white p-4">
-                <div className="text-sm font-medium">Flash Sale Ending</div>
-                <div className="text-2xl font-bold">2 hours left</div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl border border-blue-200">
+              <div className="bg-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">Organic Tomatoes Sale</h3>
-                <p className="text-gray-600 mb-4">Get fresh organic tomatoes at 30% discount from Farmer Priya</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Location: Mumbai</span>
-                  <Link to="/flash-sales" className="btn-primary text-sm">
-                    View Sale
-                  </Link>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Quality Assurance</h3>
+              <p className="text-gray-700 text-center">
+                All suppliers undergo FSSAI verification and quality checks. Only verified, trusted suppliers are allowed on our platform.
+              </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="bg-green-500 text-white p-4">
-                <div className="text-sm font-medium">New Supplier</div>
-                <div className="text-2xl font-bold">Available</div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-xl border border-green-200">
+              <div className="bg-green-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <TrendingUp className="w-8 h-8 text-white" />
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">Fresh Farms Partnership</h3>
-                <p className="text-gray-600 mb-4">New organic supplier joined - 5km away from your location</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Location: Pune</span>
-                  <Link to="/suppliers" className="btn-primary text-sm">
-                    Find Suppliers
-                  </Link>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Real-Time Updates</h3>
+              <p className="text-gray-700 text-center">
+                Live inventory tracking, instant price updates, and real-time stock synchronization between suppliers and vendors.
+              </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="bg-purple-500 text-white p-4">
-                <div className="text-sm font-medium">Special Event</div>
-                <div className="text-2xl font-bold">This Week</div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-xl border border-purple-200">
+              <div className="bg-purple-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-8 h-8 text-white" />
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">Farmer's Market Day</h3>
-                <p className="text-gray-600 mb-4">Direct from farmers event - fresh produce at wholesale prices</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Location: Nashik</span>
-                  <Link to="/organic" className="btn-primary text-sm">
-                    Join Event
-                  </Link>
-                </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Smart Negotiation</h3>
+              <p className="text-gray-700 text-center">
+                Built-in bargaining system allows direct communication and price negotiation between vendors and suppliers.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-8 rounded-xl border border-orange-200">
+              <div className="bg-orange-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-8 h-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Fast Delivery</h3>
+              <p className="text-gray-700 text-center">
+                Quick delivery within 2-4 hours with real-time tracking. Local suppliers ensure fresh produce reaches you faster.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-8 rounded-xl border border-teal-200">
+              <div className="bg-teal-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Globe className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Wide Coverage</h3>
+              <p className="text-gray-700 text-center">
+                Available across 25+ cities in India with expanding network. Find suppliers and vendors in your local area.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-8 rounded-xl border border-pink-200">
+              <div className="bg-pink-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Award className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Trusted Platform</h3>
+              <p className="text-gray-700 text-center">
+                4.8-star average rating with thousands of successful transactions. Join our community of trusted partners.
+              </p>
             </div>
           </div>
+
+        </div>
+      </section>
+
+
+      {/* How It Works Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              How Vendor Mitra Works
+            </h2>
+            <p className="text-xl text-gray-600">
+              Simple steps to connect suppliers and vendors seamlessly
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Users className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">1. Register & Verify</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Suppliers register and get FSSAI verified. Vendors create accounts to access the marketplace with quality assurance.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <MessageSquare className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">2. Connect & Negotiate</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Vendors find suppliers, browse products, and negotiate prices directly through our smart bargaining system.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Truck className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">3. Order & Deliver</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Place orders with real-time stock updates and get fast delivery with tracking across India.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 

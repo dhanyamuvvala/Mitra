@@ -14,12 +14,7 @@ export const supplierAccounts = [
     established: '2019',
     rating: 4.8,
     totalOrders: 1250,
-    products: [
-      { id: 1, name: 'Organic Tomatoes', price: 45, unit: 'kg', stock: 500, image: '🍅', category: 'Vegetables' },
-      { id: 2, name: 'Fresh Spinach', price: 35, unit: 'kg', stock: 200, image: '🥬', category: 'Leafy Greens' },
-      { id: 3, name: 'Organic Carrots', price: 40, unit: 'kg', stock: 300, image: '🥕', category: 'Vegetables' },
-      { id: 4, name: 'Green Peas', price: 60, unit: 'kg', stock: 150, image: '🟢', category: 'Vegetables' }
-    ]
+    products: []
   },
   {
     id: 'supplier_2',
@@ -35,12 +30,7 @@ export const supplierAccounts = [
     established: '2017',
     rating: 4.6,
     totalOrders: 980,
-    products: [
-      { id: 5, name: 'Fresh Milk', price: 55, unit: 'liter', stock: 100, image: '🥛', category: 'Dairy' },
-      { id: 6, name: 'Paneer', price: 280, unit: 'kg', stock: 50, image: '🧀', category: 'Dairy' },
-      { id: 7, name: 'Greek Yogurt', price: 120, unit: 'kg', stock: 80, image: '🥛', category: 'Dairy' },
-      { id: 8, name: 'Fresh Butter', price: 450, unit: 'kg', stock: 30, image: '🧈', category: 'Dairy' }
-    ]
+    products: []
   },
   {
     id: 'supplier_3',
@@ -56,12 +46,7 @@ export const supplierAccounts = [
     established: '2020',
     rating: 4.7,
     totalOrders: 750,
-    products: [
-      { id: 9, name: 'Fresh Apples', price: 120, unit: 'kg', stock: 200, image: '🍎', category: 'Fruits' },
-      { id: 10, name: 'Bananas', price: 50, unit: 'dozen', stock: 150, image: '🍌', category: 'Fruits' },
-      { id: 11, name: 'Sweet Oranges', price: 80, unit: 'kg', stock: 180, image: '🍊', category: 'Fruits' },
-      { id: 12, name: 'Fresh Grapes', price: 90, unit: 'kg', stock: 120, image: '🍇', category: 'Fruits' }
-    ]
+    products: []
   },
   {
     id: 'supplier_4',
@@ -77,12 +62,7 @@ export const supplierAccounts = [
     established: '2015',
     rating: 4.5,
     totalOrders: 1500,
-    products: [
-      { id: 13, name: 'Basmati Rice', price: 85, unit: 'kg', stock: 1000, image: '🍚', category: 'Grains' },
-      { id: 14, name: 'Whole Wheat', price: 35, unit: 'kg', stock: 800, image: '🌾', category: 'Grains' },
-      { id: 15, name: 'Toor Dal', price: 120, unit: 'kg', stock: 400, image: '🫘', category: 'Pulses' },
-      { id: 16, name: 'Chickpeas', price: 90, unit: 'kg', stock: 300, image: '🫘', category: 'Pulses' }
-    ]
+    products: []
   },
   {
     id: 'supplier_5',
@@ -98,12 +78,7 @@ export const supplierAccounts = [
     established: '2018',
     rating: 4.9,
     totalOrders: 650,
-    products: [
-      { id: 17, name: 'Fresh Ginger', price: 80, unit: 'kg', stock: 100, image: '🫚', category: 'Spices' },
-      { id: 18, name: 'Garlic', price: 200, unit: 'kg', stock: 150, image: '🧄', category: 'Spices' },
-      { id: 19, name: 'Fresh Coriander', price: 40, unit: 'bunch', stock: 200, image: '🌿', category: 'Herbs' },
-      { id: 20, name: 'Mint Leaves', price: 30, unit: 'bunch', stock: 180, image: '🌱', category: 'Herbs' }
-    ]
+    products: []
   },
   {
     id: 'supplier_6',
@@ -119,12 +94,7 @@ export const supplierAccounts = [
     established: '2016',
     rating: 4.4,
     totalOrders: 890,
-    products: [
-      { id: 21, name: 'Fresh Chicken', price: 180, unit: 'kg', stock: 200, image: '🍗', category: 'Poultry' },
-      { id: 22, name: 'Farm Eggs', price: 6, unit: 'piece', stock: 500, image: '🥚', category: 'Eggs' },
-      { id: 23, name: 'Country Chicken', price: 250, unit: 'kg', stock: 100, image: '🍗', category: 'Poultry' },
-      { id: 24, name: 'Duck Eggs', price: 12, unit: 'piece', stock: 200, image: '🥚', category: 'Eggs' }
-    ]
+    products: []
   },
   {
     id: 'supplier_7',
@@ -140,35 +110,47 @@ export const supplierAccounts = [
     established: '2021',
     rating: 4.3,
     totalOrders: 420,
-    products: [
-      { id: 25, name: 'Fresh Bread', price: 25, unit: 'loaf', stock: 100, image: '🍞', category: 'Bakery' },
-      { id: 26, name: 'Chocolate Cake', price: 350, unit: 'piece', stock: 20, image: '🍰', category: 'Bakery' },
-      { id: 27, name: 'Butter Cookies', price: 120, unit: 'pack', stock: 50, image: '🍪', category: 'Bakery' },
-      { id: 28, name: 'Croissants', price: 15, unit: 'piece', stock: 80, image: '🥐', category: 'Bakery' }
-    ]
+    products: []
   }
 ]
 
 // Get all products from all suppliers for marketplace display
 export const getAllSupplierProducts = () => {
-  const allProducts = []
-  supplierAccounts.forEach(supplier => {
-    supplier.products.forEach(product => {
-      allProducts.push({
-        ...product,
-        supplierId: supplier.id,
-        supplierName: supplier.businessName,
-        supplierLocation: supplier.location,
-        supplierRating: supplier.rating,
-        supplierPhone: supplier.phone,
-        fssaiVerified: true,
-        organic: supplier.specialization.toLowerCase().includes('organic'),
-        deliveryTime: '2-4 hours',
-        minimumOrder: 100
+  try {
+    // Import productDatabase here to avoid circular dependencies
+    const { productDatabase } = require('./userDatabase')
+    
+    // Get products from the dynamic productDatabase (supplier-added products)
+    const dynamicProducts = productDatabase.getAllProducts()
+    console.log('Dynamic products from productDatabase:', dynamicProducts)
+    
+    // Get products from static supplier accounts (if any remain)
+    const staticProducts = []
+    supplierAccounts.forEach(supplier => {
+      supplier.products.forEach(product => {
+        staticProducts.push({
+          ...product,
+          supplierId: supplier.id,
+          supplierName: supplier.businessName,
+          supplierLocation: supplier.location,
+          supplierRating: supplier.rating,
+          supplierPhone: supplier.phone,
+          fssaiVerified: true,
+          organic: supplier.specialization.toLowerCase().includes('organic'),
+          deliveryTime: '2-4 hours',
+          minimumOrder: 100
+        })
       })
     })
-  })
-  return allProducts
+    
+    // Combine both sources, prioritizing dynamic products
+    const allProducts = [...dynamicProducts, ...staticProducts]
+    console.log('All products combined:', allProducts)
+    return allProducts
+  } catch (error) {
+    console.error('Error in getAllSupplierProducts:', error)
+    return []
+  }
 }
 
 // Get supplier by email for login
@@ -183,6 +165,36 @@ export const getSupplierById = (id) => {
 
 export const generateNearbySuppliers = (userLat, userLng, radius) => {
   const suppliers = []
+  
+  // Return empty array if radius is 0
+  if (radius === 0) {
+    return suppliers
+  }
+  
+  // Import productDatabase to get real supplier products
+  let realProducts = []
+  try {
+    const { productDatabase } = require('./userDatabase')
+    realProducts = productDatabase.getAllProducts()
+  } catch (error) {
+    console.warn('Could not load real products:', error)
+  }
+  
+  // Progressive supplier distribution based on radius - start showing from 7km
+  const getMaxSuppliersForRadius = (radius) => {
+    if (radius < 7) return 0  // No suppliers until 7km
+    if (radius === 7) return 1
+    if (radius === 8) return 2
+    if (radius === 9) return 3
+    if (radius === 10) return 5
+    if (radius <= 12) return 8
+    if (radius <= 15) return 12
+    if (radius <= 18) return 16
+    if (radius <= 20) return 20
+    if (radius <= 22) return 24
+    if (radius <= 25) return 30
+    return 30 // 25km max
+  }
   
   // Helper function to get product emojis
   const getProductEmoji = (productName) => {
@@ -227,9 +239,51 @@ export const generateNearbySuppliers = (userLat, userLng, radius) => {
     ['Bread', 'Cakes', 'Cookies', 'Pastries']
   ]
   
-  // Generate suppliers dynamically around the user's location
-  // Instead of hardcoded Mumbai coordinates, we'll generate suppliers within the radius
+  // First, add real suppliers with their actual products from productDatabase
+  const realSupplierProducts = {}
+  realProducts.forEach(product => {
+    if (!realSupplierProducts[product.supplierId]) {
+      realSupplierProducts[product.supplierId] = []
+    }
+    realSupplierProducts[product.supplierId].push({
+      name: product.name,
+      price: `₹${product.price}/${product.unit || 'kg'}`,
+      image: product.image || getProductEmoji(product.name)
+    })
+  })
   
+  // Add real suppliers with their actual products
+  supplierAccounts.forEach(supplier => {
+    const distance = calculateDistance(userLat, userLng, supplier.coordinates[0], supplier.coordinates[1])
+    if (distance <= radius) {
+      const supplierProducts = realSupplierProducts[supplier.id] || []
+      
+      suppliers.push({
+        id: supplier.id,
+        name: supplier.businessName,
+        coordinates: supplier.coordinates,
+        distance: distance,
+        rating: supplier.rating,
+        price: supplierProducts.length > 0 ? supplierProducts[0].price : '₹50/kg',
+        products: supplierProducts.length > 0 ? supplierProducts : [
+          { name: 'Fresh Produce', price: '₹50/kg', image: getProductEmoji('Fresh Produce') }
+        ],
+        organic: supplier.specialization.toLowerCase().includes('organic'),
+        fssaiVerified: true,
+        trustScore: Math.floor(supplier.rating * 20),
+        location: supplier.location,
+        address: `${supplier.businessName}, ${supplier.location}`,
+        lastActive: 'Just now',
+        deliveryTime: '2-4 hours',
+        minimumOrder: '₹200',
+        paymentMethods: ['Cash', 'UPI', 'Card'],
+        specialOffers: ['Direct from supplier'],
+        supplierType: 'Verified Supplier'
+      })
+    }
+  })
+  
+  // Generate additional demo suppliers dynamically around the user's location
   // Real Chandigarh area names and approximate coordinates for better location matching
   const chandigarhAreas = [
     { name: 'Sector 1, Chandigarh', lat: 30.7569, lng: 76.7875 },
@@ -304,19 +358,48 @@ export const generateNearbySuppliers = (userLat, userLng, radius) => {
     { name: 'Barwala, Haryana', lat: 30.7949, lng: 76.8255 }
   ]
   
-  // Generate more suppliers (increased from 15 to 50)
+  // Create all potential suppliers first, then filter by distance and limit by radius
+  const allPotentialSuppliers = []
+  
+  // Generate demo suppliers with varying distances (50 total for progressive loading)
   for (let i = 0; i < 50; i++) {
-    // Use real Chandigarh area coordinates with small random variations
+    // Use real Chandigarh area coordinates with varying distances
     const area = chandigarhAreas[i % chandigarhAreas.length]
     
-    // Add small random variation to the exact coordinates (within 1-2km)
-    const randomLat = area.lat + (Math.random() - 0.5) * 0.01
-    const randomLng = area.lng + (Math.random() - 0.5) * 0.01
+    // Create suppliers starting from 7km distance range
+    let distanceMultiplier
+    if (i < 5) {
+      // Start at 7km distance (first suppliers)
+      distanceMultiplier = 0.063  // ~7km
+    } else if (i < 15) {
+      // 7-10km suppliers
+      distanceMultiplier = 0.090  // ~10km
+    } else if (i < 25) {
+      // 10-15km suppliers
+      distanceMultiplier = 0.135  // ~15km
+    } else if (i < 35) {
+      // 15-20km suppliers
+      distanceMultiplier = 0.180  // ~20km
+    } else {
+      // 20-25km suppliers
+      distanceMultiplier = 0.225  // ~25km
+    }
+    
+    // Calculate coordinates to place suppliers at specific distances from user
+    const angle = Math.random() * 2 * Math.PI
+    const targetDistance = 7 + (i / 50) * 18 // Distribute from 7km to 25km
+    
+    // Convert distance to lat/lng offset (approximate)
+    const latOffset = (targetDistance / 111) * Math.cos(angle) // 1 degree lat ≈ 111km
+    const lngOffset = (targetDistance / (111 * Math.cos(userLat * Math.PI / 180))) * Math.sin(angle)
+    
+    const randomLat = userLat + latOffset + (Math.random() - 0.5) * 0.01 // Small random variation
+    const randomLng = userLng + lngOffset + (Math.random() - 0.5) * 0.01
     
     const distance = calculateDistance(userLat, userLng, randomLat, randomLng)
     
-    // Only add supplier if within the specified radius (double-check)
-    if (distance <= radius) {
+    // Add all suppliers to potential list regardless of radius
+    {
       // Select random product category
       const productCategory = productCategories[i % productCategories.length]
       
@@ -358,8 +441,8 @@ export const generateNearbySuppliers = (userLat, userLng, radius) => {
       const streetName = streetNames[Math.floor(Math.random() * streetNames.length)]
       const buildingNumber = Math.floor(Math.random() * 999 + 1)
       
-      suppliers.push({
-        id: i + 1,
+      allPotentialSuppliers.push({
+        id: `demo_${i + 1}`,
         name: `${supplierNames[i]} (Demo Supplier)`,
         coordinates: [randomLat, randomLng],
         distance: distance,
@@ -381,6 +464,18 @@ export const generateNearbySuppliers = (userLat, userLng, radius) => {
       })
     }
   }
+  
+  // Filter suppliers by radius and sort by distance
+  const filteredSuppliers = allPotentialSuppliers
+    .filter(supplier => supplier.distance <= radius)
+    .sort((a, b) => a.distance - b.distance)
+  
+  // Limit number of suppliers based on radius for progressive loading
+  const maxSuppliers = getMaxSuppliersForRadius(radius)
+  const limitedSuppliers = filteredSuppliers.slice(0, maxSuppliers)
+  
+  // Add limited suppliers to final list
+  suppliers.push(...limitedSuppliers)
   
   return suppliers
 }

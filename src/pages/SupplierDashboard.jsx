@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useProducts } from '../contexts/ProductContext'
 import { useSearchParams } from 'react-router-dom'
-import { productDatabase, flashSalesDatabase, reviewsDatabase, bargainsDatabase, deliveriesDatabase } from '../data/userDatabase'
-import { getProductImage } from '../utils/productImages'
+import { flashSalesDatabase, reviewsDatabase, bargainsDatabase, deliveriesDatabase } from '../data/userDatabase'
 import ImageUpload from '../components/ImageUpload'
 import FlashSaleTimer from '../components/FlashSales/FlashSaleTimer'
+import productApi from '../services/productApi'
 import realTimeSync from '../utils/realTimeSync'
 import { 
   Package, 
@@ -28,15 +29,16 @@ import {
   X
 } from 'lucide-react'
 
-const SupplierDashboard = () => {
+export default function SupplierDashboard() {
   const { user } = useAuth()
-  const [searchParams] = useSearchParams()
+  const { products: allProducts, addProduct, updateProduct, deleteProduct, getProductsBySupplier, loading: productsLoading } = useProducts()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState('overview')
   const [products, setProducts] = useState([])
   const [bargains, setBargains] = useState([])
-  const [flashSales, setFlashSales] = useState([])
   const [reviews, setReviews] = useState([])
   const [deliveries, setDeliveries] = useState([])
+  const [flashSales, setFlashSales] = useState([])
   const [finalizingOrderId, setFinalizingOrderId] = useState(null)
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [showAddFlashSale, setShowAddFlashSale] = useState(false)
@@ -62,6 +64,8 @@ const SupplierDashboard = () => {
     newPrice: '',
     discount: '',
     totalQuantity: '',
+    quantityUnit: 'kg',
+    durationDays: '',
     durationHours: '',
     durationMinutes: '',
     image: ''
@@ -96,9 +100,6 @@ const SupplierDashboard = () => {
           
           const userFlashSales = flashSalesDatabase.getFlashSalesBySupplier(user.id)
           setFlashSales(userFlashSales)
-          
-          const userProducts = productDatabase.getProductsBySupplier(user.id)
-          setProducts(userProducts)
         } catch (error) {
           console.error('Error loading supplier data:', error)
         }
@@ -133,58 +134,29 @@ const SupplierDashboard = () => {
         }
       })
 
-      const unsubscribeProduct = realTimeSync.subscribe('product_update', (data) => {
-        if (data && data.supplierId === user.id) {
-          const userProducts = productDatabase.getProductsBySupplier(user.id)
-          setProducts(userProducts)
-        }
-      })
-
       return () => {
         unsubscribeBargain()
         unsubscribeReview()
         unsubscribeFlashSale()
-        unsubscribeProduct()
       }
     }
   }, [user])
 
-  const handleAddProduct = () => {
-    if (newProduct.name && newProduct.price) {
-      const productData = {
-        name: newProduct.name,
-        price: parseFloat(newProduct.price),
-        quantity: newProduct.quantity,
-        unit: newProduct.unit,
-        description: newProduct.description,
-        image: newProduct.image,
-        isOrganic: newProduct.isOrganic,
-        licenseNumber: newProduct.isOrganic ? null : newProduct.licenseNumber,
-        isVerified: newProduct.isOrganic ? true : newProduct.isVerified,
-        supplier: user.name,
-        supplierId: user.id,
-        category: newProduct.category
-      }
-
-      const addedProduct = productDatabase.addProduct(productData)
-      setProducts([...products, addedProduct])
+  // Load products from ProductContext - only when allProducts changes
+  useEffect(() => {
+    if (user && user.id) {
+      const userProducts = getProductsBySupplier(user.id)
+      console.log('Loading products for supplier from context:', user.id, userProducts)
       
-      // Reset form
-      setNewProduct({
-        name: '',
-        price: '',
-        quantity: '',
-        description: '',
-        image: '',
-        isOrganic: false,
-        licenseNumber: '',
-        isVerified: false
-      })
-      setShowAddProduct(false)
-    } else {
-      alert('Please fill in all required fields (name and price)')
+      // Remove duplicates by ID before setting
+      const uniqueProducts = userProducts.filter((product, index, self) => 
+        index === self.findIndex(p => p.id === product.id)
+      )
+      
+      setProducts(uniqueProducts)
     }
-  }
+  }, [user, allProducts, getProductsBySupplier])
+
 
   const handleEditProduct = (product) => {
     setEditingProduct(product)
@@ -203,49 +175,92 @@ const SupplierDashboard = () => {
     setShowAddProduct(true)
   }
 
-  const handleUpdateProduct = () => {
-    if (newProduct.name && newProduct.price && editingProduct) {
-      const updatedData = {
-        name: newProduct.name,
-        price: parseFloat(newProduct.price),
-        quantity: newProduct.quantity,
-        unit: newProduct.unit,
-        description: newProduct.description,
-        image: newProduct.image,
-        isOrganic: newProduct.isOrganic,
-        licenseNumber: newProduct.isOrganic ? null : newProduct.licenseNumber,
-        isVerified: newProduct.isOrganic ? true : newProduct.isVerified,
-        category: newProduct.category
-      }
-
-      const updatedProduct = productDatabase.updateProduct(editingProduct.id, updatedData)
-      if (updatedProduct) {
-        setProducts(products.map(p => p.id === editingProduct.id ? updatedProduct : p))
-        setEditingProduct(null)
-        setNewProduct({
-          name: '',
-          price: '',
-          quantity: '',
-          description: '',
-          image: '',
-          isOrganic: false,
-          licenseNumber: '',
-          isVerified: false,
-          category: 'vegetables'
-        })
-        setShowAddProduct(false)
-      }
-    } else {
-      alert('Please fill in all required fields')
+  const handleAddProduct = async () => {
+    if (!newProduct.name || !newProduct.price || !newProduct.quantity || !newProduct.unit) {
+      alert('Please fill all required fields')
+      return
     }
+
+    const productData = {
+      ...newProduct,
+      price: parseFloat(newProduct.price),
+      quantity: parseInt(newProduct.quantity),
+      stock: parseInt(newProduct.quantity),
+      supplierId: user.id,
+      supplierName: user.name,
+      supplierRating: user.rating || 4.5,
+      image: newProduct.image || '🥬',
+      category: newProduct.category || 'vegetables'
+    }
+
+    const addedProduct = await addProduct(productData)
+    console.log('Product added via API:', addedProduct)
+    
+    if (addedProduct) {
+      // Don't manually update local state - let ProductContext real-time sync handle it
+      alert('Product added successfully!')
+    } else {
+      alert('Failed to add product. Please try again.')
+    }
+
+    setNewProduct({
+      name: '',
+      price: '',
+      quantity: '',
+      unit: 'kg',
+      description: '',
+      category: 'vegetables',
+      isOrganic: false
+    })
+    setShowAddProduct(false)
   }
 
-  const handleDeleteProduct = (productId) => {
+  const handleUpdateProduct = async () => {
+    if (!newProduct.name || !newProduct.price || !newProduct.quantity || !newProduct.unit) {
+      alert('Please fill all required fields')
+      return
+    }
+
+    const updatedData = {
+      name: newProduct.name,
+      price: parseFloat(newProduct.price),
+      quantity: parseInt(newProduct.quantity),
+      stock: parseInt(newProduct.quantity),
+      unit: newProduct.unit,
+      description: newProduct.description,
+      image: newProduct.image || editingProduct.image,
+      isOrganic: newProduct.isOrganic,
+      licenseNumber: newProduct.isOrganic ? null : newProduct.licenseNumber,
+      isVerified: newProduct.isOrganic ? true : newProduct.isVerified,
+      category: newProduct.category
+    }
+
+    const updated = await updateProduct(editingProduct.id, updatedData)
+    if (updated) {
+      // Don't manually update local state - let ProductContext real-time sync handle it
+      alert('Product updated successfully!')
+    }
+
+    setNewProduct({
+      name: '',
+      price: '',
+      quantity: '',
+      description: '',
+      image: '',
+      isOrganic: false,
+      licenseNumber: '',
+      isVerified: false,
+      category: 'vegetables'
+    })
+    setShowAddProduct(false)
+  }
+
+  const handleDeleteProduct = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      const success = productDatabase.deleteProduct(productId)
-      if (success) {
-        setProducts(products.filter(p => p.id !== productId))
-        alert('Product deleted successfully')
+      const deleted = await deleteProduct(productId)
+      if (deleted) {
+        // Don't manually update local state - let ProductContext real-time sync handle it
+        alert('Product deleted successfully!')
       } else {
         alert('Failed to delete product')
       }
@@ -299,19 +314,13 @@ const SupplierDashboard = () => {
     if (newFlashSale.product && newFlashSale.newPrice) {
       // Calculate endTime from duration
       const now = new Date()
+      const days = parseInt(newFlashSale.durationDays) || 0
       const hours = parseInt(newFlashSale.durationHours) || 0
       const minutes = parseInt(newFlashSale.durationMinutes) || 0
-      const endTime = new Date(now.getTime() + hours * 60 * 60 * 1000 + minutes * 60 * 1000).toISOString()
+      const endTime = new Date(now.getTime() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000 + minutes * 60 * 1000).toISOString()
       
-      // Use uploaded image if available, otherwise generate one
-      let imageUrl = newFlashSale.image
-      if (!imageUrl) {
-        try {
-          imageUrl = await getProductImage(newFlashSale.product)
-        } catch (error) {
-          console.log('Failed to generate image for flash sale')
-        }
-      }
+      // Use uploaded image if available
+      const imageUrl = newFlashSale.image
       
       const flashSaleData = {
         product: newFlashSale.product,
@@ -319,6 +328,7 @@ const SupplierDashboard = () => {
         price: parseFloat(newFlashSale.newPrice),
         discount: parseFloat(newFlashSale.discount),
         total: parseInt(newFlashSale.totalQuantity),
+        quantityUnit: newFlashSale.quantityUnit,
         endTime,
         supplier: user.name,
         supplierId: user.id,
@@ -332,6 +342,8 @@ const SupplierDashboard = () => {
         newPrice: '',
         discount: '',
         totalQuantity: '',
+        quantityUnit: 'kg',
+        durationDays: '',
         durationHours: '',
         durationMinutes: '',
         image: ''
@@ -366,14 +378,7 @@ const SupplierDashboard = () => {
       const endTime = new Date(now.getTime() + hours * 60 * 60 * 1000 + minutes * 60 * 1000).toISOString()
       
       // Use uploaded image if available, otherwise keep existing
-      let imageUrl = newFlashSale.image || editingFlashSale.image
-      if (!imageUrl) {
-        try {
-          imageUrl = await getProductImage(newFlashSale.product)
-        } catch (error) {
-          console.log('Failed to generate image for flash sale')
-        }
-      }
+      const imageUrl = newFlashSale.image || editingFlashSale.image
       
       const updatedData = {
         product: newFlashSale.product,
@@ -613,18 +618,28 @@ const SupplierDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4">
-                  {product.image && (
+                  {product.image && product.image !== '🥬' ? (
                     <img 
                       src={product.image} 
                       alt={product.name}
                       className="w-full h-32 object-cover rounded mb-3"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
                     />
-                  )}
+                  ) : null}
+                  <div 
+                    className="w-full h-32 bg-green-100 rounded mb-3 flex items-center justify-center"
+                    style={{ display: product.image && product.image !== '🥬' ? 'none' : 'flex' }}
+                  >
+                    <span className="text-4xl">🥬</span>
+                  </div>
                   <h3 className="font-medium mb-2">{product.name}</h3>
                   <p className="text-sm text-gray-600 mb-2">{product.description}</p>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-medium">₹{product.price}/{product.unit || 'kg'}</span>
-                    <span className="text-sm text-blue-600 font-medium">{product.quantity} {product.unit || 'kg'}</span>
+                    <span className="text-sm text-blue-600 font-medium">Stock: {product.quantity} {product.unit || 'kg'}</span>
                   </div>
                   <div className="flex gap-2 mb-3">
                     {/* Only show FSSAI Verified for non-organic products */}
@@ -1023,36 +1038,13 @@ const SupplierDashboard = () => {
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Image
+                  Product Image (Optional)
                 </label>
                 <ImageUpload
                   onImageSelect={(imageData) => setNewProduct({...newProduct, image: imageData})}
                   currentImage={newProduct.image}
                   onRemoveImage={() => setNewProduct({...newProduct, image: ''})}
                 />
-                
-                {/* Auto-generate image option */}
-                {!newProduct.image && newProduct.name && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800 mb-2">
-                      Don't have a photo? We can generate one for you:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const imageUrl = await getProductImage(newProduct.name.trim())
-                          setNewProduct(prev => ({...prev, image: imageUrl}))
-                        } catch (error) {
-                          alert('Unable to generate image. Please upload your own photo.')
-                        }
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Generate image for "{newProduct.name}"
-                    </button>
-                  </div>
-                )}
               </div>
               
               {/* FSSAI Verification - Only for Non-Organic Products */}
@@ -1193,27 +1185,54 @@ const SupplierDashboard = () => {
                 onChange={(e) => setNewFlashSale({...newFlashSale, discount: e.target.value})}
                 className="w-full p-2 border rounded"
               />
-              <input
-                type="number"
-                placeholder="Total Quantity"
-                value={newFlashSale.totalQuantity}
-                onChange={(e) => setNewFlashSale({...newFlashSale, totalQuantity: e.target.value})}
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="number"
-                placeholder="Duration (hours)"
-                value={newFlashSale.durationHours}
-                onChange={e => setNewFlashSale({ ...newFlashSale, durationHours: e.target.value })}
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="number"
-                placeholder="Duration (minutes)"
-                value={newFlashSale.durationMinutes}
-                onChange={e => setNewFlashSale({ ...newFlashSale, durationMinutes: e.target.value })}
-                className="w-full p-2 border rounded"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Total Quantity"
+                  value={newFlashSale.totalQuantity}
+                  onChange={(e) => setNewFlashSale({...newFlashSale, totalQuantity: e.target.value})}
+                  className="flex-1 p-2 border rounded"
+                />
+                <select
+                  value={newFlashSale.quantityUnit}
+                  onChange={(e) => setNewFlashSale({...newFlashSale, quantityUnit: e.target.value})}
+                  className="w-20 p-2 border rounded"
+                >
+                  <option value="kg">Kg</option>
+                  <option value="g">g</option>
+                  <option value="litre">L</option>
+                  <option value="ml">mL</option>
+                  <option value="piece">Pc</option>
+                  <option value="dozen">Dz</option>
+                  <option value="box">Box</option>
+                  <option value="bag">Bag</option>
+                  <option value="quintal">Q</option>
+                  <option value="ton">Ton</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  placeholder="Days"
+                  value={newFlashSale.durationDays}
+                  onChange={e => setNewFlashSale({ ...newFlashSale, durationDays: e.target.value })}
+                  className="p-2 border rounded"
+                />
+                <input
+                  type="number"
+                  placeholder="Hours"
+                  value={newFlashSale.durationHours}
+                  onChange={e => setNewFlashSale({ ...newFlashSale, durationHours: e.target.value })}
+                  className="p-2 border rounded"
+                />
+                <input
+                  type="number"
+                  placeholder="Minutes"
+                  value={newFlashSale.durationMinutes}
+                  onChange={e => setNewFlashSale({ ...newFlashSale, durationMinutes: e.target.value })}
+                  className="p-2 border rounded"
+                />
+              </div>
               
               {/* Flash Sale Image Upload */}
               <div>
@@ -1225,29 +1244,6 @@ const SupplierDashboard = () => {
                   currentImage={newFlashSale.image}
                   onRemoveImage={() => setNewFlashSale({...newFlashSale, image: ''})}
                 />
-                
-                {/* Auto-generate image option */}
-                {!newFlashSale.image && newFlashSale.product && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800 mb-2">
-                      Don't have a photo? We can generate one for you:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const imageUrl = await getProductImage(newFlashSale.product.trim())
-                          setNewFlashSale(prev => ({...prev, image: imageUrl}))
-                        } catch (error) {
-                          alert('Unable to generate image. Please upload your own photo.')
-                        }
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Generate image for "{newFlashSale.product}"
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex gap-2 mt-6">
@@ -1284,4 +1280,4 @@ const SupplierDashboard = () => {
   )
 }
 
-export default SupplierDashboard 
+ 

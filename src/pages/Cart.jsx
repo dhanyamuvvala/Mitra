@@ -1,63 +1,205 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
+import { useProducts } from '../contexts/ProductContext'
 import { ShoppingCart, Trash2, ArrowLeft, CreditCard } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { deliveriesDatabase } from '../data/userDatabase'
+import { deliveriesDatabase, flashSalesDatabase, productDatabase } from '../data/userDatabase'
+import { getAllSupplierProducts } from '../data/suppliersDatabase'
+import BuyNowDialog from '../components/BuyNow/BuyNowDialog'
+import stockManager from '../utils/stockManager'
 
 const Cart = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart()
+  const { decreaseStock } = useProducts()
   const [showCodModal, setShowCodModal] = useState(false)
+  const [showBuyNowDialog, setShowBuyNowDialog] = useState(false)
+  const [availableStock, setAvailableStock] = useState({})
 
   const handleBuyNow = () => {
-    setShowCodModal(true)
+    if (!user) {
+      alert('Please log in to make a purchase')
+      navigate('/login')
+      return
+    }
+    setShowBuyNowDialog(true)
   }
 
-  const handleConfirmCod = () => {
-    // Group cart items by supplierId
-    const deliveriesBySupplier = {}
-    cart.forEach(item => {
-      if (!deliveriesBySupplier[item.supplierId]) {
-        deliveriesBySupplier[item.supplierId] = {
-          supplier: item.supplier,
-          supplierId: item.supplierId,
-          products: [],
-          totalAmount: 0
+  const handleConfirmOrder = async (orderData) => {
+    const { deliveryAddress, paymentMethod } = orderData
+    
+    try {
+      // First, check stock availability for all items
+      const stockChecks = []
+      for (const item of cart) {
+        if (!item.isFlashSale) {
+          const stockCheck = await stockManager.checkAvailability(item.id, item.quantity)
+          if (!stockCheck.success || !stockCheck.data.isAvailable) {
+            alert(`Insufficient stock for ${item.name}. Available: ${stockCheck.data?.currentStock || 0}, Requested: ${item.quantity}`)
+            return
+          }
+          stockChecks.push({ item, stockCheck })
         }
       }
-      deliveriesBySupplier[item.supplierId].products.push(`${item.name} x${item.quantity}`)
-      // Remove currency symbol for calculation
-      const priceNum = typeof item.price === 'string' ? parseInt(item.price.replace(/[^\d]/g, '')) : item.price
-      deliveriesBySupplier[item.supplierId].totalAmount += priceNum * item.quantity
-    })
-    // Create a delivery for each supplier
-    const deliverySummaries = []
-    console.log('Deliveries to be created:', deliveriesBySupplier)
-    Object.values(deliveriesBySupplier).forEach(delivery => {
-      const newDelivery = deliveriesDatabase.addDelivery({
-        customer: 'Manya',
-        customerId: 1,
-        supplier: delivery.supplier,
-        supplierId: delivery.supplierId,
-        products: delivery.products,
-        totalAmount: delivery.totalAmount,
-        status: 'in-transit',
-        paymentMethod: 'Cash on Delivery',
-        deliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+      // Process stock updates using ProductContext
+      const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const stockUpdatePromises = []
+      
+      for (const item of cart) {
+        if (!item.isFlashSale) {
+          stockUpdatePromises.push(
+            decreaseStock(item.id, item.quantity).then(result => ({
+              item,
+              result
+            }))
+          )
+        }
+      }
+
+      if (stockUpdatePromises.length > 0) {
+        const stockResults = await Promise.all(stockUpdatePromises)
+        const failedItems = stockResults.filter(({ result }) => !result.success)
+        
+        if (failedItems.length > 0) {
+          const failedNames = failedItems.map(({ item }) => item.name).join(', ')
+          alert(`Purchase failed for some items: ${failedNames}`)
+          return
+        }
+
+        console.log('Stock updated successfully for all items')
+      }
+
+      // Group cart items by supplierId
+      const deliveriesBySupplier = {}
+      cart.forEach(item => {
+        if (!deliveriesBySupplier[item.supplierId]) {
+          deliveriesBySupplier[item.supplierId] = {
+            supplier: item.supplier,
+            supplierId: item.supplierId,
+            products: [],
+            totalAmount: 0
+          }
+        }
+        // Remove currency symbol for calculation
+        const priceNum = typeof item.price === 'string' ? parseInt(item.price.replace(/[^\d]/g, '')) : item.price
+        deliveriesBySupplier[item.supplierId].products.push({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit || 'piece',
+          price: priceNum,
+          image: item.image
+        })
+        deliveriesBySupplier[item.supplierId].totalAmount += priceNum * item.quantity
       })
-      console.log('Created delivery:', newDelivery)
-      deliverySummaries.push(`${delivery.supplier}: ${delivery.products.join(', ')} (₹${delivery.totalAmount})`)
-    })
-    alert(`Thank you for your purchase! Deliveries created for:\n${deliverySummaries.join('\n')}`)
-    clearCart()
-    setShowCodModal(false)
+      
+      // Create a delivery for each supplier
+      const deliverySummaries = []
+      Object.values(deliveriesBySupplier).forEach(delivery => {
+        const newDelivery = deliveriesDatabase.addDelivery({
+          customer: user?.name || 'Customer',
+          customerId: user?.id || 1,
+          supplier: delivery.supplier,
+          supplierId: delivery.supplierId,
+          products: delivery.products,
+          totalAmount: delivery.totalAmount,
+          status: 'delivered', // Set to delivered for testing review functionality
+          paymentMethod: paymentMethod,
+          deliveryAddress: deliveryAddress,
+          deliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        })
+        const productNames = delivery.products.map(p => 
+          typeof p === 'string' ? p : `${p.quantity} ${p.unit} ${p.name}`
+        )
+        deliverySummaries.push(`${delivery.supplier}: ${productNames.join(', ')} (₹${delivery.totalAmount})`)
+      })
+
+      // Update sold count for flash sale items
+      cart.forEach(item => {
+        if (item.isFlashSale) {
+          const flashSale = flashSalesDatabase.getFlashSaleById(item.id)
+          if (flashSale) {
+            flashSalesDatabase.updateFlashSale(item.id, {
+              sold: flashSale.sold + item.quantity
+            })
+          }
+        }
+      })
+      
+      alert(`Thank you for your purchase! Total: ₹${getCartTotal()}\n\nStock has been automatically updated for all items.`)
+      clearCart()
+      
+      // Refresh stock data
+      loadStock()
+      
+    } catch (error) {
+      console.error('Error processing order:', error)
+      alert('Failed to process your order. Please try again.')
+    }
   }
+
+  // Load available stock for cart items
+  const loadStock = async () => {
+    const stockData = {}
+    
+    for (const item of cart) {
+      if (item.isFlashSale) {
+        // For flash sales, get available stock from flash sales database
+        const flashSale = flashSalesDatabase.getFlashSaleById(item.id)
+        if (flashSale) {
+          stockData[item.id] = flashSale.total - flashSale.sold
+        }
+      } else {
+        // For regular products, use stock manager to get real-time stock
+        try {
+          const stockResult = await stockManager.getStock(item.id)
+          if (stockResult.success) {
+            stockData[item.id] = stockResult.data.stock
+          } else {
+            // Fallback to supplier products if stock manager fails
+            const supplierProducts = getAllSupplierProducts()
+            const product = supplierProducts.find(p => p.id === item.id)
+            if (product) {
+              stockData[item.id] = product.stock || product.quantity || 0
+            }
+          }
+        } catch (error) {
+          console.error('Error loading stock for item:', item.id, error)
+          // Fallback to supplier products
+          const supplierProducts = getAllSupplierProducts()
+          const product = supplierProducts.find(p => p.id === item.id)
+          if (product) {
+            stockData[item.id] = product.stock || product.quantity || 0
+          }
+        }
+      }
+    }
+    
+    setAvailableStock(stockData)
+  }
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      loadStock()
+    }
+  }, [cart])
 
   const handleQuantityChange = (itemId, newQuantity) => {
     if (newQuantity <= 0) {
       removeFromCart(itemId)
-    } else {
-      updateQuantity(itemId, newQuantity)
+      return
     }
+
+    const maxStock = availableStock[itemId] || 0
+    if (newQuantity > maxStock) {
+      alert(`Only ${maxStock} items available in stock!`)
+      return
+    }
+
+    updateQuantity(itemId, newQuantity)
   }
 
   if (cart.length === 0) {
@@ -81,26 +223,19 @@ const Cart = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
-      {/* Cash on Delivery Modal */}
-      {showCodModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">Select Payment Method</h2>
-            <button
-              className="w-full btn-primary py-3 text-lg mb-2"
-              onClick={handleConfirmCod}
-            >
-              Cash on Delivery
-            </button>
-            <button
-              className="w-full btn-secondary py-2"
-              onClick={() => setShowCodModal(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Buy Now Dialog */}
+      <BuyNowDialog
+        isOpen={showBuyNowDialog}
+        onClose={() => setShowBuyNowDialog(false)}
+        item={{
+          name: `Cart Items (${cart.length} items)`,
+          supplier: 'Multiple Suppliers',
+          unit: 'items'
+        }}
+        quantity={cart.reduce((total, item) => total + item.quantity, 0)}
+        totalPrice={getCartTotal()}
+        onConfirmOrder={handleConfirmOrder}
+      />
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
@@ -146,7 +281,10 @@ const Cart = () => {
                           <p className="text-sm text-gray-500">from {item.supplier}</p>
                         )}
                       </div>
-                      <span className="font-medium text-gray-900">{item.price}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-900">{item.price}</span>
+                        <span className="text-xs text-gray-500">per {item.unit || 'piece'}</span>
+                      </div>
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -164,6 +302,11 @@ const Cart = () => {
                         >
                           +
                         </button>
+                        {availableStock[item.id] !== undefined && (
+                          <span className="text-xs text-gray-500 ml-2">
+                            ({availableStock[item.id]} available)
+                          </span>
+                        )}
                       </div>
                       <button 
                         onClick={() => removeFromCart(item.id)}

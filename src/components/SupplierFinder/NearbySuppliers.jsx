@@ -24,6 +24,7 @@ import 'leaflet/dist/leaflet.css'
 
 // Import the enhanced suppliers database
 import { generateNearbySuppliers as generateSuppliersFromDB } from '../../data/suppliersDatabase.js'
+import realTimeSync from '../../utils/realTimeSync'
 
 // --- Fix default marker icon paths for CRA/Vite bundlers ---
 delete L.Icon.Default.prototype._getIconUrl
@@ -44,7 +45,7 @@ const ChangeView = ({ center, zoom }) => {
 
 const NearbySuppliers = () => {
   const [search, setSearch] = useState('')
-  const [radius, setRadius] = useState(7)
+  const [radius, setRadius] = useState(0)
   const [organicOnly, setOrganicOnly] = useState(false)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [minRating, setMinRating] = useState(0)
@@ -392,7 +393,9 @@ const NearbySuppliers = () => {
       const price = extractPrice(supplier.price)
       const priceMatches = price >= minPrice && price <= maxPrice
 
-      const distanceMatches = (supplier.distance || 0) <= radius
+      // Show suppliers within the specified radius
+      const supplierDistance = supplier.distance || 0
+      const distanceMatches = supplierDistance <= radius
 
       const result = (
         nameMatches &&
@@ -492,6 +495,22 @@ const NearbySuppliers = () => {
     }
     updateSuppliers()
   }, [radius, userLocation, locationDetected])
+
+  // Subscribe to product updates to refresh suppliers when products are added
+  useEffect(() => {
+    const unsubscribe = realTimeSync.subscribe('product_update', (data) => {
+      console.log('Product update received in NearbySuppliers:', data)
+      if (userLocation && locationDetected) {
+        generateNearbySuppliers(userLocation.lat, userLocation.lng, radius).then(nearbySuppliers => {
+          setSuppliers(nearbySuppliers || [])
+        })
+      }
+    })
+    
+    return () => {
+      unsubscribe()
+    }
+  }, [userLocation, locationDetected, radius])
 
   // Cart logic (unchanged)
   const addToCart = item => {
@@ -694,21 +713,21 @@ const NearbySuppliers = () => {
               </label>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setRadius(Math.max(3, radius - 1))}
+                  onClick={() => setRadius(Math.max(0, radius - 1))}
                   className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
                 >
                   -
                 </button>
                 <input
                   type="range"
-                  min="3"
-                  max="15"
+                  min="0"
+                  max="25"
                   value={radius}
                   onChange={e => setRadius(Number(e.target.value))}
                   className="flex-1 accent-green-600"
                 />
                 <button
-                  onClick={() => setRadius(Math.min(15, radius + 1))}
+                  onClick={() => setRadius(Math.min(25, radius + 1))}
                   className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
                 >
                   +
@@ -838,7 +857,7 @@ const NearbySuppliers = () => {
                     <button
                       onClick={() => {
                         setSearch('')
-                        setRadius(7)
+                        setRadius(0)
                         setOrganicOnly(false)
                         setVerifiedOnly(false)
                         setMinRating(0)
@@ -863,7 +882,7 @@ const NearbySuppliers = () => {
                     radius.
                   </p>
                   <button
-                    onClick={() => setRadius(7)}
+                    onClick={() => setRadius(1)}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     Increase Search Radius

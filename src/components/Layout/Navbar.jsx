@@ -16,8 +16,7 @@ import {
   MessageSquare,
   ChevronDown,
   Settings,
-  LogOut,
-  Bell
+  LogOut
 } from 'lucide-react'
 
 const Navbar = () => {
@@ -30,8 +29,8 @@ const Navbar = () => {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Find Items', href: '/find-items', icon: Package },
+    { name: 'Flash Sales', href: '/find-sales', icon: Zap },
     { name: 'Suppliers', href: '/suppliers', icon: MapPin },
-    { name: 'Flash Sales', href: '/flash-sales', icon: Zap },
     { name: 'Organic', href: '/organic', icon: Store },
     { name: 'Bargains', href: '/bargains', icon: MessageSquare },
   ]
@@ -101,15 +100,6 @@ const Navbar = () => {
               </div>
             )}
 
-            {/* Notifications */}
-            {user && (
-              <div className="relative">
-                <button className="p-2 text-gray-700 hover:text-primary-600 transition-colors">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
-                </button>
-              </div>
-            )}
 
             {/* Auth Buttons */}
             {user ? (

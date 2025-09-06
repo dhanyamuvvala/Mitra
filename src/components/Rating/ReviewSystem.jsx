@@ -1,13 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Star, Upload, X, Camera } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { reviewsDatabase } from '../../data/userDatabase'
 
-const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
+const ReviewSystem = ({ itemId, itemName, supplierId, supplierName, onClose, onSubmit, readOnly = false }) => {
+  const { user } = useAuth()
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [reviews, setReviews] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0]
@@ -26,6 +30,14 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
     setImagePreview(null)
   }
 
+  // Load existing reviews for this supplier
+  useEffect(() => {
+    if (supplierId) {
+      const existingReviews = reviewsDatabase.getReviewsBySupplier(supplierId)
+      setReviews(existingReviews)
+    }
+  }, [supplierId])
+
   const handleSubmitReview = () => {
     if (rating === 0) {
       alert('Please select a rating')
@@ -37,24 +49,36 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
       return
     }
 
+    setLoading(true)
+
     const newReview = {
-      id: Date.now(),
+      productId: itemId,
+      productName: itemName,
+      supplierId: supplierId,
+      supplierName: supplierName,
+      vendorId: user?.id || 1,
+      vendorName: user?.name || 'Anonymous',
       rating,
       comment,
       image: imagePreview,
-      date: new Date().toLocaleDateString(),
-      user: 'Anonymous User' // In a real app, this would be the logged-in user
+      date: new Date().toISOString(),
+      status: 'published'
     }
 
-    setReviews([...reviews, newReview])
+    // Save to database
+    const savedReview = reviewsDatabase.addReview(newReview)
+    
+    // Update local state
+    setReviews(prev => [...prev, savedReview])
     setRating(0)
     setComment('')
     setSelectedImage(null)
     setImagePreview(null)
     setShowForm(false)
+    setLoading(false)
 
     if (onSubmit) {
-      onSubmit(newReview)
+      onSubmit(savedReview)
     }
   }
 
@@ -94,8 +118,8 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
           </span>
         </div>
 
-        {/* Write Review Button */}
-        {!showForm && (
+        {/* Write Review Button - Only show if not read-only */}
+        {!readOnly && !showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg transition-colors mb-4"
@@ -104,8 +128,8 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
           </button>
         )}
 
-        {/* Review Form */}
-        {showForm && (
+        {/* Review Form - Only show if not read-only */}
+        {!readOnly && showForm && (
           <div className="border rounded-lg p-4 mb-4">
             <h4 className="font-medium mb-3">Write Your Review</h4>
             
@@ -192,9 +216,10 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
             <div className="flex gap-2">
               <button
                 onClick={handleSubmitReview}
-                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg transition-colors"
+                disabled={loading}
+                className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-colors"
               >
-                Submit Review
+                {loading ? 'Submitting...' : 'Submit Review'}
               </button>
               <button
                 onClick={() => setShowForm(false)}
@@ -208,34 +233,58 @@ const ReviewSystem = ({ itemId, itemName, onClose, onSubmit }) => {
 
         {/* Reviews List */}
         <div className="space-y-4 max-h-64 overflow-y-auto">
-          {reviews.map((review) => (
-            <div key={review.id} className="border-b pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-4 h-4 ${
-                        star <= review.rating
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-gray-500">{review.user}</span>
-                <span className="text-sm text-gray-500">{review.date}</span>
-              </div>
-              <p className="text-sm text-gray-700 mb-2">{review.comment}</p>
-              {review.image && (
-                <img
-                  src={review.image}
-                  alt="Review"
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-              )}
+          {reviews.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No reviews yet for this supplier.</p>
+              <p className="text-sm">Be the first to share your experience!</p>
             </div>
-          ))}
+          ) : (
+            <>
+              {/* Past Reviews Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-gray-900">Past Reviews ({reviews.length})</h4>
+                {!readOnly && (
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Write Review
+                  </button>
+                )}
+              </div>
+              
+              {reviews.map((review) => (
+                <div key={review.id} className="border-b pb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= review.rating
+                              ? 'text-yellow-400 fill-current'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-500 font-medium">{review.vendorName || 'Anonymous'}</span>
+                    <span className="text-sm text-gray-500">
+                      {new Date(review.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2">{review.comment}</p>
+                  {review.image && (
+                    <img
+                      src={review.image}
+                      alt="Review"
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>

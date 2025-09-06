@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { Store, Phone, MapPin, Star, Calendar, Truck } from 'lucide-react'
 import Negotiation from '../components/Bargain/Negotiation'
 import { productDatabase } from '../data/userDatabase'
+import realTimeSync from '../utils/realTimeSync'
 
 const Marketplace = () => {
   const { t } = useLanguage()
@@ -10,10 +11,26 @@ const Marketplace = () => {
   const [showNegotiation, setShowNegotiation] = useState(false)
   const [products, setProducts] = useState([])
 
-  // Load products from database
+  // Load products from database with real-time updates
   useEffect(() => {
-    const allProducts = productDatabase.getAllProducts()
-    setProducts(allProducts)
+    const loadProducts = () => {
+      const allProducts = productDatabase.getAllProducts()
+      console.log('Loading products in Marketplace:', allProducts)
+      setProducts(allProducts)
+    }
+    
+    // Initial load
+    loadProducts()
+    
+    // Subscribe to real-time product updates
+    const unsubscribe = realTimeSync.subscribe('product_update', (data) => {
+      console.log('Product update received in Marketplace:', data)
+      loadProducts() // Reload all products when any product is updated
+    })
+    
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   return (

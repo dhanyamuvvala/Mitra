@@ -9,6 +9,7 @@ import TrustScore from '../components/Rating/TrustScore'
 import Negotiation from '../components/Bargain/Negotiation'
 import ReviewSystem from '../components/Rating/ReviewSystem'
 import { generateNearbySuppliers, calculateDistance, getRegionFromCoordinates } from '../data/suppliersDatabase'
+import realTimeSync from '../utils/realTimeSync'
 
 // Fix for default markers in react-leaflet
 import L from 'leaflet'
@@ -23,7 +24,7 @@ const SupplierFinder = () => {
   const { cart, addToCart, removeFromCart, updateQuantity, getCartTotal, getCartCount } = useCart()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [radius, setRadius] = useState(7)
+  const [radius, setRadius] = useState(0)
   const [organicOnly, setOrganicOnly] = useState(false)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [minRating, setMinRating] = useState(0)
@@ -57,6 +58,21 @@ const SupplierFinder = () => {
       setSuppliers(nearbySuppliers || [])
     }
   }, [radius, userLocation, locationDetected])
+
+  // Subscribe to product updates to refresh suppliers when products are added
+  useEffect(() => {
+    const unsubscribe = realTimeSync.subscribe('product_update', (data) => {
+      console.log('Product update received in SupplierFinder:', data)
+      if (userLocation && locationDetected) {
+        const nearbySuppliers = generateNearbySuppliers(userLocation.lat, userLocation.lng, radius)
+        setSuppliers(nearbySuppliers || [])
+      }
+    })
+    
+    return () => {
+      unsubscribe()
+    }
+  }, [userLocation, locationDetected, radius])
 
   // Helper function to safely extract price
   const extractPrice = (priceString) => {
@@ -112,7 +128,8 @@ const SupplierFinder = () => {
         distanceMatches = distance <= radius
       } else {
         // If no user location, use the default distance
-        distanceMatches = (supplier.distance || 0) <= radius
+        const supplierDistance = supplier.distance || 0
+        distanceMatches = supplierDistance <= radius
       }
       
       return nameMatches && distanceMatches && organicMatches && verifiedMatches && ratingMatches && priceMatches
@@ -265,8 +282,8 @@ const SupplierFinder = () => {
         <h1 className="text-3xl font-bold text-primary-600">Supplier Finder</h1>
       </div>
 
-      {/* Error Display */}
-      {error && (
+      {/* Error Display - only show if no suppliers found */}
+      {error && filteredSuppliers.length === 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2">
             <span className="text-red-800 font-medium">Error</span>
@@ -341,14 +358,14 @@ const SupplierFinder = () => {
               </label>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setRadius(Math.max(5, radius - 1))}
+                  onClick={() => setRadius(Math.max(0, radius - 1))}
                   className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
                 >
                   -
                 </button>
                 <input
                   type="range"
-                  min="5"
+                  min="0"
                   max="25"
                   value={radius}
                   onChange={e => setRadius(Number(e.target.value))}
@@ -456,8 +473,8 @@ const SupplierFinder = () => {
             
             {locationDetected && (
               <div className="relative">
-                {/* Map Controls */}
-                <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 space-y-2">
+                {/* Map Controls - Keep only location center button */}
+                <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2">
                   <button 
                     onClick={() => {
                       if (userLocation && mapRef.current) {
@@ -468,30 +485,6 @@ const SupplierFinder = () => {
                     title="Center on your location"
                   >
                     📍
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (mapRef.current) {
-                        const currentZoom = mapRef.current.getZoom()
-                        mapRef.current.setZoom(currentZoom + 1)
-                      }
-                    }}
-                    className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors"
-                    title="Zoom in"
-                  >
-                    ➕
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (mapRef.current) {
-                        const currentZoom = mapRef.current.getZoom()
-                        mapRef.current.setZoom(currentZoom - 1)
-                      }
-                    }}
-                    className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors"
-                    title="Zoom out"
-                  >
-                    ➖
                   </button>
                 </div>
                 

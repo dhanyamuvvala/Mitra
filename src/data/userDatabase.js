@@ -189,6 +189,7 @@ export const flashSalesDatabase = {
       id: Date.now(),
       ...flashSale,
       sold: 0,
+      remainingStock: flashSale.total || flashSale.totalQuantity || 0,
       status: 'active',
       endTime: flashSale.endTime || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // Default 2 hours
       createdAt: new Date().toISOString().split('T')[0]
@@ -239,6 +240,42 @@ export const flashSalesDatabase = {
 
   getAllFlashSales: () => {
     return flashSalesDatabase.flashSales.filter(f => f.status === 'active')
+  },
+
+  getFlashSaleById: (id) => {
+    return flashSalesDatabase.flashSales.find(f => f.id === id)
+  },
+  
+  // Flash sale inventory management
+  decreaseFlashSaleStock: (id, quantity) => {
+    const index = flashSalesDatabase.flashSales.findIndex(f => f.id === id)
+    if (index !== -1) {
+      const sale = flashSalesDatabase.flashSales[index]
+      const currentRemaining = sale.remainingStock || (sale.total - sale.sold)
+      
+      if (currentRemaining < quantity) {
+        console.error(`Insufficient flash sale stock. Available: ${currentRemaining}, Requested: ${quantity}`)
+        return null
+      }
+      
+      const newSold = sale.sold + quantity
+      const newRemaining = sale.total - newSold
+      
+      flashSalesDatabase.flashSales[index] = {
+        ...sale,
+        sold: newSold,
+        remainingStock: newRemaining
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('vendorMitraFlashSales', JSON.stringify(flashSalesDatabase.flashSales))
+      
+      // Emit real-time sync event
+      realTimeSync.emitFlashSaleUpdate('stock_update', flashSalesDatabase.flashSales[index])
+      
+      return flashSalesDatabase.flashSales[index]
+    }
+    return null
   },
 
   // Load flash sales from localStorage on initialization
@@ -336,6 +373,151 @@ export const productDatabase = {
     return this.products
   },
 
+  // Enhanced inventory management methods
+  decreaseStock(productId, quantity) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      console.error(`Product with ID ${productId} not found`)
+      return null
+    }
+    
+    const currentStock = product.stock || product.quantity || 0
+    if (currentStock < quantity) {
+      console.error(`Insufficient stock. Available: ${currentStock}, Requested: ${quantity}`)
+      return null
+    }
+    
+    const newStock = Math.max(0, currentStock - quantity)
+    const updatedProduct = this.updateProduct(productId, {
+      stock: newStock,
+      quantity: newStock,
+      lastStockUpdate: new Date().toISOString()
+    })
+    
+    console.log(`Stock decreased for ${product.name}: ${currentStock} -> ${newStock} (${quantity} units purchased)`)
+    return updatedProduct
+  },
+  
+  increaseStock(productId, quantity) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      console.error(`Product with ID ${productId} not found`)
+      return null
+    }
+    
+    const currentStock = product.stock || product.quantity || 0
+    const newStock = currentStock + quantity
+    const updatedProduct = this.updateProduct(productId, {
+      stock: newStock,
+      quantity: newStock,
+      lastStockUpdate: new Date().toISOString()
+    })
+    
+    console.log(`Stock increased for ${product.name}: ${currentStock} -> ${newStock} (${quantity} units added)`)
+    return updatedProduct
+  },
+
+  setStock(productId, newStockValue) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      console.error(`Product with ID ${productId} not found`)
+      return null
+    }
+    
+    const currentStock = product.stock || product.quantity || 0
+    const newStock = Math.max(0, parseInt(newStockValue || 0))
+    const updatedProduct = this.updateProduct(productId, {
+      stock: newStock,
+      quantity: newStock,
+      lastStockUpdate: new Date().toISOString()
+    })
+    
+    console.log(`Stock set for ${product.name}: ${currentStock} -> ${newStock}`)
+    return updatedProduct
+  },
+  
+  getAvailableStock(productId) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      return 0
+    }
+    return parseInt(product.stock || product.quantity || 0)
+  },
+
+  checkStockAvailability(productId, requestedQuantity) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      return {
+        available: false,
+        error: 'Product not found'
+      }
+    }
+    
+    const currentStock = this.getAvailableStock(productId)
+    const requested = parseInt(requestedQuantity || 0)
+    
+    return {
+      available: currentStock >= requested,
+      currentStock,
+      requestedQuantity: requested,
+      shortfall: Math.max(0, requested - currentStock),
+      product: product
+    }
+  },
+
+  getStockStatus(productId) {
+    const product = this.getProductById(productId)
+    if (!product) {
+      return 'unknown'
+    }
+    
+    const stock = this.getAvailableStock(productId)
+    const lowStockThreshold = product.lowStockThreshold || 10
+    
+    if (stock === 0) return 'out_of_stock'
+    if (stock <= lowStockThreshold) return 'low_stock'
+    return 'in_stock'
+  },
+
+  // Batch stock operations
+  batchUpdateStock(updates) {
+    const results = []
+    
+    for (const update of updates) {
+      try {
+        let result = null
+        
+        switch (update.operation) {
+          case 'decrease':
+            result = this.decreaseStock(update.productId, update.quantity)
+            break
+          case 'increase':
+            result = this.increaseStock(update.productId, update.quantity)
+            break
+          case 'set':
+            result = this.setStock(update.productId, update.quantity)
+            break
+          default:
+            console.error(`Unknown operation: ${update.operation}`)
+        }
+        
+        results.push({
+          productId: update.productId,
+          success: result !== null,
+          result: result
+        })
+      } catch (error) {
+        results.push({
+          productId: update.productId,
+          success: false,
+          error: error.message
+        })
+      }
+    }
+    
+    return results
+  },
+  
   // Load products from localStorage on initialization
   initialize() {
     const savedProducts = localStorage.getItem('vendorMitraProducts')
@@ -781,8 +963,113 @@ export const clearAllData = () => {
   console.log('All data cleared successfully')
 }
 
-// Initialize deliveries database
-deliveriesDatabase.initialize()
+// Clear only product data
+export const clearProductData = () => {
+  localStorage.removeItem('vendorMitraProducts')
+  productDatabase.products = []
+  console.log('Product catalog cleared successfully')
+}
 
-// Clear data on first load to ensure clean slate
-// clearAllData() // Commented out to preserve flash sales data 
+// Initialize deliveries database
+// Clear existing deliveries and add sample orders with product images
+deliveriesDatabase.deliveries = []
+
+// Add sample orders with actual product images
+const sampleOrders = [
+  {
+    id: 'ORD-001',
+    customer: 'Manya',
+    customerId: 1,
+    supplier: 'Sakshi',
+    supplierId: 1,
+    products: [
+      {
+        id: 1,
+        name: 'Fresh Onions',
+        quantity: 2,
+        unit: 'kg',
+        price: 30,
+        image: 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&h=300&fit=crop'
+      },
+      {
+        id: 2,
+        name: 'Organic Carrots',
+        quantity: 1,
+        unit: 'kg',
+        price: 40,
+        image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400&h=300&fit=crop'
+      }
+    ],
+    totalAmount: 100,
+    status: 'delivered',
+    paymentMethod: 'UPI',
+    deliveryAddress: '123 Main Street, City',
+    deliveryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'ORD-002',
+    customer: 'Manya',
+    customerId: 1,
+    supplier: 'Rajesh',
+    supplierId: 2,
+    products: [
+      {
+        id: 3,
+        name: 'Basmati Rice',
+        quantity: 5,
+        unit: 'kg',
+        price: 120,
+        image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop'
+      }
+    ],
+    totalAmount: 120,
+    status: 'delivered',
+    paymentMethod: 'Cash',
+    deliveryAddress: '123 Main Street, City',
+    deliveryDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'ORD-003',
+    customer: 'Manya',
+    customerId: 1,
+    supplier: 'Priya',
+    supplierId: 3,
+    products: [
+      {
+        id: 4,
+        name: 'Fresh Tomatoes',
+        quantity: 3,
+        unit: 'kg',
+        price: 60,
+        image: 'https://images.unsplash.com/photo-1546470427-5c4a4b0b0b0b?w=400&h=300&fit=crop'
+      },
+      {
+        id: 5,
+        name: 'Green Bell Peppers',
+        quantity: 1,
+        unit: 'kg',
+        price: 80,
+        image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=400&h=300&fit=crop'
+      }
+    ],
+    totalAmount: 140,
+    status: 'delivered',
+    paymentMethod: 'UPI',
+    deliveryAddress: '123 Main Street, City',
+    deliveryDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    orderDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+  }
+]
+
+// Add sample orders to deliveries
+sampleOrders.forEach(order => {
+  deliveriesDatabase.deliveries.push(order)
+})
+
+// Save to localStorage
+localStorage.setItem('vendorMitraDeliveries', JSON.stringify(deliveriesDatabase.deliveries))
+
+// Initialize product database to ensure persistence
+productDatabase.initialize() 

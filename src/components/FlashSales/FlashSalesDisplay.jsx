@@ -86,7 +86,12 @@ const FlashSalesDisplay = ({ onAddToCart }) => {
   }, [loadFlashSales])
 
   const handlePurchase = (flashSale) => {
-    if (flashSale.sold >= flashSale.total) {
+    // Check available stock using remainingStock or calculated value
+    const remainingStock = flashSale.remainingStock !== undefined 
+      ? flashSale.remainingStock 
+      : (flashSale.total - flashSale.sold)
+    
+    if (remainingStock <= 0) {
       alert('This flash sale is sold out!')
       return
     }
@@ -104,17 +109,15 @@ const FlashSalesDisplay = ({ onAddToCart }) => {
       })
     }
 
-    // Update sold count and sync to supplier side
-    const updatedSale = flashSalesDatabase.updateFlashSale(flashSale.id, {
-      sold: flashSale.sold + 1
-    })
+    // Use proper inventory management for flash sales
+    const updatedSale = flashSalesDatabase.decreaseFlashSaleStock(flashSale.id, 1)
     
-    // Trigger real-time sync
-    realTimeSync.emit('flash_sale_update', {
-      action: 'purchase',
-      flashSale: updatedSale,
-      supplierId: flashSale.supplierId
-    })
+    if (!updatedSale) {
+      alert('Failed to update flash sale inventory!')
+      return
+    }
+    
+    console.log(`Flash sale stock updated: ${flashSale.product} - Remaining: ${updatedSale.remainingStock}`)
 
     // Reload flash sales to reflect changes
     loadFlashSales()
@@ -133,7 +136,8 @@ const FlashSalesDisplay = ({ onAddToCart }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {flashSales.map((sale) => {
-          const isSoldOut = sale.sold >= sale.total
+          const remainingStock = sale.remainingStock !== undefined ? sale.remainingStock : (sale.total - sale.sold)
+          const isSoldOut = remainingStock <= 0
           const isExpired = expiredSales.has(sale.id)
           const cardBgClass = isSoldOut ? 'bg-gray-200' : isExpired ? 'bg-gray-100' : 'bg-white'
           const borderClass = isSoldOut ? 'border-gray-400' : isExpired ? 'border-gray-300' : 'border-red-200'
@@ -162,7 +166,7 @@ const FlashSalesDisplay = ({ onAddToCart }) => {
               <img 
                 src={sale.image} 
                 alt={sale.product}
-                className="w-full h-32 object-cover rounded mb-3"
+                className="w-full h-48 object-cover rounded mb-3"
                 onError={(e) => {
                   e.target.src = 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400&h=300&fit=crop'
                 }}
