@@ -4,6 +4,7 @@ import { Shield, Save, Edit, Camera, MapPin, Phone, Mail, User, Award, Star, Pac
 import LicenseVerification from '../components/FSSAI/LicenseVerification'
 import { deliveriesDatabase, reviewsDatabase } from '../data/userDatabase'
 import ReviewSystem from '../components/Rating/ReviewSystem'
+import realTimeSync from '../utils/realTimeSync'
 
 const Profile = () => {
   const { user, updateProfile } = useAuth()
@@ -28,6 +29,20 @@ const Profile = () => {
       const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
       setRecentOrders(orders)
     }
+  }, [user?.id])
+
+  // Feature 2: Listen for real-time order updates
+  useEffect(() => {
+    if (!user?.id) return
+
+    const unsubscribe = realTimeSync.subscribe('order_update', (data) => {
+      if (data.vendorId === user.id && data.action === 'new_order') {
+        console.log('New order received in real-time:', data.order)
+        setRecentOrders(prev => [data.order, ...prev])
+      }
+    })
+
+    return unsubscribe
   }, [user?.id])
 
   // Check if user has already reviewed a supplier

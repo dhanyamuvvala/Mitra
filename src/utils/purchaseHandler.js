@@ -1,5 +1,5 @@
 // Purchase Handler - Updates product stock after vendor purchases
-import { productDatabase } from '../data/userDatabase'
+import { productDatabase, deliveriesDatabase } from '../data/userDatabase'
 import realTimeSync from './realTimeSync'
 
 /**
@@ -93,6 +93,37 @@ export const updateProductStockAfterPurchase = async (productId, purchasedAmount
       orderId: options.orderId,
       timestamp: Date.now()
     })
+
+    // Feature 1: Update supplier deliveries when vendor buys something
+    if (options.vendorId && options.deliveryAddress) {
+      const deliveryData = {
+        customer: options.vendorName || `Vendor ${options.vendorId}`,
+        customerId: options.vendorId,
+        supplier: product.supplierName || `Supplier ${product.supplierId}`,
+        supplierId: product.supplierId,
+        products: [{
+          id: productId,
+          name: product.name,
+          quantity: purchaseAmount,
+          unit: product.unit || 'kg',
+          price: product.price,
+          image: product.image
+        }],
+        totalAmount: product.price * purchaseAmount,
+        paymentMethod: options.paymentMethod || 'UPI',
+        deliveryAddress: options.deliveryAddress,
+        orderDate: new Date().toISOString()
+      }
+      
+      const newDelivery = deliveriesDatabase.addDelivery(deliveryData)
+      console.log('Added delivery to supplier dashboard:', newDelivery)
+      
+      // Feature 2: Update vendor's recent orders in real-time
+      realTimeSync.emitOrderUpdate('new_order', {
+        vendorId: options.vendorId,
+        order: newDelivery
+      })
+    }
 
     // Log the transaction
     logPurchaseTransaction({

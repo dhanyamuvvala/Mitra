@@ -288,6 +288,27 @@ const FindItems = () => {
     setBargainOffer('')
   }
 
+  // Feature 3: Handle confirmed bargain and add to cart
+  const handleBargainConfirmed = ({ product, agreedPrice, originalPrice }) => {
+    if (!user) {
+      alert('Please log in to add items to cart')
+      return
+    }
+
+    const quantity = 1 // Default quantity for bargained items
+    const cartItem = {
+      ...product,
+      price: agreedPrice,
+      originalPrice: originalPrice,
+      quantity: quantity,
+      isBargained: true
+    }
+
+    addToCart(cartItem, quantity)
+    setBargainModal({ open: false, bargain: null, item: null })
+    alert(`Item added to cart at bargained price ₹${agreedPrice}!`)
+  }
+
   const handleAddToCart = (item) => {
     if (!user) {
       alert('Please log in to add items to cart')
@@ -387,7 +408,13 @@ const FindItems = () => {
       const { item, quantity, totalPrice, deliveryAddress, paymentMethod } = orderData
       
       // Use the ProductContext decreaseStock method for proper stock management
-      const stockUpdateResult = await decreaseStock(item.id, quantity)
+      // Include vendor and delivery information for Feature 1 & 2
+      const stockUpdateResult = await decreaseStock(item.id, quantity, {
+        vendorId: user?.id,
+        vendorName: user?.name,
+        deliveryAddress: deliveryAddress,
+        paymentMethod: paymentMethod
+      })
       
       console.log('Stock update result:', stockUpdateResult)
       
@@ -828,27 +855,13 @@ const FindItems = () => {
               <h3 className="text-lg font-semibold">Bargain Chat for {bargainModal.item.name}</h3>
               <button onClick={() => setBargainModal({ open: false, bargain: null, item: null })} className="text-gray-500 hover:text-gray-700">✕</button>
             </div>
-            <div className="mb-4 h-64 overflow-y-auto border rounded p-2 bg-gray-50">
-              {bargainModal.bargain.messages.length === 0 ? (
-                <div className="text-gray-400 text-center">No messages yet. Start the bargain!</div>
-              ) : (
-                bargainModal.bargain.messages.map((msg, idx) => (
-                  <div key={idx} className={`mb-2 ${msg.sender === 'vendor' ? 'text-right' : 'text-left'}`}>
-                    <div className={`inline-block px-3 py-2 rounded-lg ${msg.sender === 'vendor' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                      <div className="text-xs text-gray-500 mb-1">{msg.sender === 'vendor' ? 'You' : bargainModal.bargain.supplierName}</div>
-                      {msg.offer !== undefined && <div className="font-bold">Offer: ₹{msg.offer}</div>}
-                      {msg.message && <div>{msg.message}</div>}
-                      <div className="text-xs text-gray-400 mt-1">{new Date(msg.timestamp).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="flex gap-2 mt-2">
-              <input type="number" placeholder="Offer (₹)" value={bargainOffer} onChange={e => setBargainOffer(e.target.value)} className="flex-1 border rounded p-2" />
-              <input type="text" placeholder="Message" value={bargainMessage} onChange={e => setBargainMessage(e.target.value)} className="flex-1 border rounded p-2" />
-              <button onClick={sendBargainMessage} className="btn-primary">Send</button>
-            </div>
+            
+            {/* Feature 3: Use updated Negotiation component with confirm functionality */}
+            <Negotiation 
+              initialOffer={bargainModal.item.price}
+              product={bargainModal.item}
+              onBargainConfirmed={handleBargainConfirmed}
+            />
           </div>
         </div>
       )}

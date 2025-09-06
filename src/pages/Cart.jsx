@@ -51,7 +51,12 @@ const Cart = () => {
       for (const item of cart) {
         if (!item.isFlashSale) {
           stockUpdatePromises.push(
-            decreaseStock(item.id, item.quantity).then(result => ({
+            decreaseStock(item.id, item.quantity, {
+              vendorId: user?.id,
+              vendorName: user?.name,
+              deliveryAddress: deliveryAddress,
+              paymentMethod: paymentMethod
+            }).then(result => ({
               item,
               result
             }))

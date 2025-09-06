@@ -131,7 +131,7 @@ export const ProductProvider = ({ children }) => {
   }
 
   // Inventory management methods
-  const decreaseStock = async (productId, quantity) => {
+  const decreaseStock = async (productId, quantity, options = {}) => {
     try {
       const response = await productApi.decreaseStock(productId, quantity)
       if (response.success) {
@@ -141,6 +141,13 @@ export const ProductProvider = ({ children }) => {
             ? { ...p, stock: response.data.stock, quantity: response.data.quantity }
             : p
         ))
+        
+        // Features 1 & 2: Handle delivery and order updates if vendor info provided
+        if (options.vendorId && options.deliveryAddress) {
+          const { updateProductStockAfterPurchase } = await import('../utils/purchaseHandler')
+          await updateProductStockAfterPurchase(productId, quantity, options)
+        }
+        
         return response
       } else {
         setError(response.message)

@@ -110,6 +110,14 @@ class RealTimeSync {
       ...stockData
     })
   }
+
+  // Emit order updates for vendor profile
+  emitOrderUpdate(action, orderData) {
+    this.emit('order_update', {
+      action, // 'new_order', 'status_change'
+      ...orderData
+    })
+  }
 }
 
 // Create singleton instance
