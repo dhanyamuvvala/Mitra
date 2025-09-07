@@ -51,34 +51,46 @@ const ReviewSystem = ({ itemId, itemName, supplierId, supplierName, onClose, onS
 
     setLoading(true)
 
-    const newReview = {
-      productId: itemId,
-      productName: itemName,
-      supplierId: supplierId,
-      supplierName: supplierName,
-      vendorId: user?.id || 1,
-      vendorName: user?.name || 'Anonymous',
-      rating,
-      comment,
-      image: imagePreview,
-      date: new Date().toISOString(),
-      status: 'published'
-    }
+    try {
+      const newReview = {
+        productId: itemId,
+        productName: itemName,
+        supplierId: supplierId,
+        supplierName: supplierName,
+        vendorId: user?.id || 1,
+        vendorName: user?.name || 'Anonymous',
+        rating,
+        comment,
+        image: imagePreview,
+        date: new Date().toISOString(),
+        status: 'published'
+      }
 
-    // Save to database
-    const savedReview = reviewsDatabase.addReview(newReview)
-    
-    // Update local state
-    setReviews(prev => [...prev, savedReview])
-    setRating(0)
-    setComment('')
-    setSelectedImage(null)
-    setImagePreview(null)
-    setShowForm(false)
-    setLoading(false)
+      // Save to database
+      const savedReview = reviewsDatabase.addReview(newReview)
+      console.log('Review submitted successfully:', savedReview)
+      
+      // Update local state
+      setReviews(prev => [...prev, savedReview])
+      setRating(0)
+      setComment('')
+      setSelectedImage(null)
+      setImagePreview(null)
+      setShowForm(false)
 
-    if (onSubmit) {
-      onSubmit(savedReview)
+      if (onSubmit) {
+        onSubmit(savedReview)
+      }
+
+      // Close the modal after successful submission
+      if (onClose) {
+        onClose()
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error)
+      alert('Failed to submit review. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
