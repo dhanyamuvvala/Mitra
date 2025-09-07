@@ -120,7 +120,12 @@ const Profile = () => {
     // Refresh orders to update review status
     if (user?.id) {
       const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-      setRecentOrders(orders)
+      const sortedOrders = orders.sort((a, b) => {
+        const dateA = new Date(a.orderDate || a.id)
+        const dateB = new Date(b.orderDate || b.id)
+        return dateB - dateA
+      })
+      setRecentOrders(sortedOrders)
     }
     setSelectedOrderForReview(null)
     setSelectedProductForReview(null)
@@ -131,7 +136,12 @@ const Profile = () => {
     // Refresh orders to update review status
     if (user?.id) {
       const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-      setRecentOrders(orders)
+      const sortedOrders = orders.sort((a, b) => {
+        const dateA = new Date(a.orderDate || a.id)
+        const dateB = new Date(b.orderDate || b.id)
+        return dateB - dateA
+      })
+      setRecentOrders(sortedOrders)
     }
     setSelectedProductForReview(null)
   }
