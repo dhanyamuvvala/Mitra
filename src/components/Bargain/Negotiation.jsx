@@ -28,19 +28,7 @@ const Negotiation = ({ initialOffer = 100, product = null, onBargainConfirmed = 
     sendMessage(input, 'vendor', offer)
     setInput('')
     
-    // Simulate supplier response
-    setTimeout(() => {
-      if (offer && offer < initialOffer) {
-        const counterOffer = Math.max(offer + 10, Math.floor(initialOffer * 0.9))
-        sendMessage(`How about ₹${counterOffer}? That's my best price.`, 'supplier', counterOffer)
-        setAgreedPrice(counterOffer)
-      } else if (offer && offer >= initialOffer) {
-        sendMessage('Perfect! I accept your offer.', 'supplier', offer)
-        setAgreedPrice(offer)
-      } else {
-        sendMessage('Let me consider your offer.', 'supplier')
-      }
-    }, 1000)
+    // Removed automatic supplier responses - suppliers must manually respond
   }
 
   // Feature 3: Confirm option to settle at agreed price
@@ -81,7 +69,7 @@ const Negotiation = ({ initialOffer = 100, product = null, onBargainConfirmed = 
         <button className="btn-primary" type="submit" disabled={isConfirmed}>Send</button>
       </form>
       
-      {/* Feature 3: Confirm bargain option */}
+      {/* Agreement section - only shows when manually set by supplier */}
       {agreedPrice && !isConfirmed && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <h5 className="font-semibold text-green-800 mb-2">Agreement Reached!</h5>
