@@ -878,7 +878,6 @@ reviewsDatabase.initialize()
 flashSalesDatabase.initialize()
 bargainsDatabase.initialize()
 productDatabase.initialize()
-deliveriesDatabase.initialize()
 
 export const deliveriesDatabase = {
   deliveries: [],
@@ -929,6 +928,9 @@ export const deliveriesDatabase = {
   }
 }
 
+// Initialize deliveries database after definition
+deliveriesDatabase.initialize()
+
 // Clear all localStorage data to ensure clean slate
 export const clearAllData = () => {
   localStorage.removeItem('vendorMitraProducts')
@@ -956,10 +958,4 @@ export const clearProductData = () => {
   console.log('Product catalog cleared successfully')
 }
 
-// Initialize deliveries database and clear existing orders
-deliveriesDatabase.deliveries = []
-localStorage.removeItem('vendorMitraDeliveries')
-deliveriesDatabase.initialize()
-
-// Initialize product database to ensure persistence
-productDatabase.initialize() 
+// Note: All databases are initialized at the top of the file 
