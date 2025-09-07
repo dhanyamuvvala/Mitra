@@ -42,23 +42,37 @@ const Profile = () => {
     if (!user?.id) return
 
     let refreshTimeout
+    let lastRefreshTime = 0
+    
     const refreshOrders = () => {
-      // Debounce multiple rapid updates to prevent duplicates
-      clearTimeout(refreshTimeout)
-      refreshTimeout = setTimeout(() => {
-        const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-        const sortedOrders = orders.sort((a, b) => {
-          const dateA = new Date(a.orderDate || a.id)
-          const dateB = new Date(b.orderDate || b.id)
-          return dateB - dateA
-        })
-        setRecentOrders(sortedOrders)
-      }, 50)
+      const now = Date.now()
+      // Prevent too frequent refreshes (max once per 200ms)
+      if (now - lastRefreshTime < 200) {
+        clearTimeout(refreshTimeout)
+        refreshTimeout = setTimeout(refreshOrders, 200)
+        return
+      }
+      
+      lastRefreshTime = now
+      const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
+      const sortedOrders = orders.sort((a, b) => {
+        const dateA = new Date(a.orderDate || a.id)
+        const dateB = new Date(b.orderDate || b.id)
+        return dateB - dateA
+      })
+      
+      // Only update if orders actually changed
+      setRecentOrders(prevOrders => {
+        if (JSON.stringify(prevOrders) === JSON.stringify(sortedOrders)) {
+          return prevOrders // No change, don't trigger re-render
+        }
+        return sortedOrders
+      })
     }
 
-    // Only listen to stock updates (since purchases create both delivery and stock events)
+    // Listen to stock updates for new purchases
     const unsubscribePurchase = realTimeSync.subscribe('stock_update', (data) => {
-      if (data.action === 'purchase') {
+      if (data.action === 'purchase' && data.vendorId === user.id) {
         refreshOrders()
       }
     })
@@ -356,6 +370,20 @@ const Profile = () => {
                                     )}
                                   </div>
                                   
+                                  {/* Write Review Button for delivered orders */}
+                                  {order.status === 'delivered' && !hasReviewedSupplier(order.supplierId) && (
+                                    <button
+                                      onClick={() => setSelectedProductForReview({
+                                        ...product,
+                                        orderId: order.orderId || order.id,
+                                        supplierId: order.supplierId,
+                                        supplierName: order.supplier
+                                      })}
+                                      className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md font-medium mt-2 transition-colors"
+                                    >
+                                      ✍️ Write Review
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             )
