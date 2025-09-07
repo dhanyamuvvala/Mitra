@@ -970,7 +970,9 @@ export const clearProductData = () => {
   console.log('Product catalog cleared successfully')
 }
 
-// Initialize deliveries database 
+// Initialize deliveries database and clear existing orders
+deliveriesDatabase.deliveries = []
+localStorage.removeItem('vendorMitraDeliveries')
 deliveriesDatabase.initialize()
 
 // Initialize product database to ensure persistence

@@ -31,18 +31,45 @@ const Profile = () => {
     }
   }, [user?.id])
 
-  // Feature 2: Listen for real-time order updates
+  // Listen for real-time order and delivery updates
   useEffect(() => {
     if (!user?.id) return
 
-    const unsubscribe = realTimeSync.subscribe('order_update', (data) => {
+    const unsubscribeOrder = realTimeSync.subscribe('order_update', (data) => {
       if (data.vendorId === user.id && data.action === 'new_order') {
         console.log('New order received in real-time:', data.order)
         setRecentOrders(prev => [data.order, ...prev])
+        // Refresh orders from database
+        const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
+        setRecentOrders(orders)
       }
     })
 
-    return unsubscribe
+    const unsubscribeDelivery = realTimeSync.subscribe('delivery_update', (data) => {
+      if (data.vendorId === user.id || data.customerId === user.id) {
+        console.log('Delivery update received:', data.delivery)
+        // Refresh orders from database
+        const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
+        setRecentOrders(orders)
+      }
+    })
+
+    // Also listen for purchase events that might create new deliveries
+    const unsubscribePurchase = realTimeSync.subscribe('stock_update', (data) => {
+      if (data.action === 'purchase') {
+        // Small delay to ensure delivery record is created first
+        setTimeout(() => {
+          const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
+          setRecentOrders(orders)
+        }, 100)
+      }
+    })
+
+    return () => {
+      unsubscribeOrder()
+      unsubscribeDelivery()
+      unsubscribePurchase()
+    }
   }, [user?.id])
 
   // Check if user has already reviewed a supplier
