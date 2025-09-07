@@ -229,15 +229,9 @@ const ReviewSystem = ({ itemId, itemName, supplierId, supplierName, onClose, onS
               <button
                 onClick={handleSubmitReview}
                 disabled={loading}
-                className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-colors"
+                className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-colors"
               >
                 {loading ? 'Submitting...' : 'Submit Review'}
-              </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
               </button>
             </div>
           </div>
@@ -255,14 +249,6 @@ const ReviewSystem = ({ itemId, itemName, supplierId, supplierName, onClose, onS
               {/* Past Reviews Header */}
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-medium text-gray-900">Past Reviews ({reviews.length})</h4>
-                {!readOnly && (
-                  <button
-                    onClick={() => setShowForm(true)}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Write Review
-                  </button>
-                )}
               </div>
               
               {reviews.map((review) => (

@@ -718,34 +718,6 @@ export const bargainsDatabase = {
       
       // Emit real-time sync event for message
       realTimeSync.emitBargainUpdate('message', bargain)
-      
-      // AI auto-bargain for fake suppliers (id 3, 4, 5)
-      if (
-        messageObj.sender === 'vendor' &&
-        [3, 4, 5].includes(bargain.supplierId)
-      ) {
-        // Find last vendor offer
-        const lastOffer = messageObj.offer || 0
-        // Set a minimum price for the supplier
-        const minPrice = 0.7 * (bargain.productName.toLowerCase().includes('potato') ? 25 : 30)
-        let counterOffer = lastOffer * 1.1 // 10% higher than vendor offer
-        if (counterOffer < minPrice) counterOffer = minPrice
-        // Only counter if vendor offer is below a threshold
-        if (lastOffer < 100) {
-          setTimeout(() => {
-            bargain.messages.push({
-              sender: 'supplier',
-              offer: Math.round(counterOffer),
-              message: 'Best I can do is ₹' + Math.round(counterOffer),
-              timestamp: new Date().toISOString()
-            })
-            localStorage.setItem('vendorMitraBargains', JSON.stringify(bargainsDatabase.bargains))
-            
-            // Emit real-time sync event for auto-response
-            realTimeSync.emitBargainUpdate('message', bargain)
-          }, 1200)
-        }
-      }
       return bargain
     }
     return null
