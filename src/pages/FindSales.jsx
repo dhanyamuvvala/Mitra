@@ -182,8 +182,8 @@ const FindSales = () => {
     // Create delivery record
     import('../data/userDatabase').then(({ deliveriesDatabase }) => {
       deliveriesDatabase.addDelivery({
-        customer: 'Manya',
-        customerId: 1,
+        customer: user?.name || 'Customer',
+        customerId: user?.id || 1,
         supplier: item.supplier,
         supplierId: item.supplierId,
         products: [`${quantity} piece of ${item.product} (Flash Sale)`],
