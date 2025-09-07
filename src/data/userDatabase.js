@@ -878,6 +878,7 @@ reviewsDatabase.initialize()
 flashSalesDatabase.initialize()
 bargainsDatabase.initialize()
 productDatabase.initialize()
+deliveriesDatabase.initialize()
 
 export const deliveriesDatabase = {
   deliveries: [],
@@ -900,7 +901,20 @@ export const deliveriesDatabase = {
   },
 
   getDeliveriesByVendor: (vendorId) => {
-    return deliveriesDatabase.deliveries.filter(d => Number(d.customerId) === Number(vendorId))
+    const deliveries = deliveriesDatabase.deliveries.filter(d => Number(d.customerId) === Number(vendorId))
+    // Remove actual duplicates based on orderId, keeping the latest one
+    const uniqueDeliveries = deliveries.reduce((acc, current) => {
+      const existing = acc.find(item => item.orderId === current.orderId)
+      if (!existing) {
+        acc.push(current)
+      } else if (current.id > existing.id) {
+        // Keep the newer delivery if duplicate orderId found
+        const index = acc.indexOf(existing)
+        acc[index] = current
+      }
+      return acc
+    }, [])
+    return uniqueDeliveries
   },
 
   getAllDeliveries: () => {

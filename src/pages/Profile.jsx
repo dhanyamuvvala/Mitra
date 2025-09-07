@@ -371,7 +371,7 @@ const Profile = () => {
                                   </div>
                                   
                                   {/* Write Review Button for delivered orders */}
-                                  {order.status === 'delivered' && !hasReviewedSupplier(order.supplierId) && (
+                                  {order.status === 'delivered' && order.supplierId && !hasReviewedSupplier(order.supplierId) && (
                                     <button
                                       onClick={() => setSelectedProductForReview({
                                         ...product,
