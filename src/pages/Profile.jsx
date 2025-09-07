@@ -320,8 +320,8 @@ const Profile = () => {
                 <p className="text-sm">Your recent orders will appear here</p>
               </div>
             ) : (
-              recentOrders.slice(0, 5).map((order) => (
-                <div key={order.id} className="border rounded-lg p-4">
+              recentOrders.slice(0, 5).map((order, orderIndex) => (
+                <div key={`${order.id}-${order.orderDate}-${orderIndex}`} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900 mb-1">
@@ -340,7 +340,7 @@ const Profile = () => {
                             const productImage = typeof product === 'object' ? product.image : null
                             
                             return (
-                              <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                              <div key={`${order.id}-product-${index}-${productName}`} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                                 {/* Product Image */}
                                 <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                                   {productImage ? (

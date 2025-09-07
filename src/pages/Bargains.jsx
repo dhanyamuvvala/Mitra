@@ -22,17 +22,42 @@ const Bargains = () => {
   }
 
   const sendBargainMessage = () => {
-    if (!bargainOffer && !bargainMessage) return
+    if (!bargainOffer) return
     bargainsDatabase.addMessage(selectedBargain.id, {
       sender: 'vendor',
       offer: bargainOffer ? parseFloat(bargainOffer) : undefined,
-      message: bargainMessage
+      message: `Offer: ₹${bargainOffer}`
     })
     // Refresh bargain from DB
     const updated = bargainsDatabase.getBargainById(selectedBargain.id)
     setSelectedBargain(updated)
-    setBargainMessage('')
     setBargainOffer('')
+  }
+
+  const confirmBargain = (amount) => {
+    if (!amount) {
+      alert('Please enter an amount first')
+      return
+    }
+    
+    // Update bargain status to accepted
+    bargainsDatabase.updateBargain(selectedBargain.id, { 
+      status: 'accepted',
+      finalPrice: parseFloat(amount)
+    })
+    
+    // Add confirmation message
+    bargainsDatabase.addMessage(selectedBargain.id, {
+      sender: 'vendor',
+      offer: parseFloat(amount),
+      message: `Agreement confirmed at ₹${amount}`
+    })
+    
+    // Refresh and close
+    const updated = bargainsDatabase.getBargainById(selectedBargain.id)
+    setSelectedBargain(updated)
+    alert(`Bargain confirmed at ₹${amount}`)
+    setSelectedBargain(null)
   }
 
   return (
@@ -81,8 +106,8 @@ const Bargains = () => {
             </div>
             <div className="flex gap-2 mt-2">
               <input type="number" placeholder="Offer (₹)" value={bargainOffer} onChange={e => setBargainOffer(e.target.value)} className="flex-1 border rounded p-2" />
-              <input type="text" placeholder="Message" value={bargainMessage} onChange={e => setBargainMessage(e.target.value)} className="flex-1 border rounded p-2" />
-              <button onClick={sendBargainMessage} className="btn-primary">Send</button>
+              <button onClick={sendBargainMessage} className="btn-primary">Send Offer</button>
+              <button onClick={() => confirmBargain(bargainOffer)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Confirm</button>
             </div>
           </div>
         </div>
