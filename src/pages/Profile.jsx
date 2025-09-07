@@ -27,7 +27,13 @@ const Profile = () => {
   useEffect(() => {
     if (user?.id) {
       const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-      setRecentOrders(orders)
+      // Sort orders by creation date (newest first)
+      const sortedOrders = orders.sort((a, b) => {
+        const dateA = new Date(a.orderDate || a.id)
+        const dateB = new Date(b.orderDate || b.id)
+        return dateB - dateA
+      })
+      setRecentOrders(sortedOrders)
     }
   }, [user?.id])
 
@@ -38,19 +44,28 @@ const Profile = () => {
     const unsubscribeOrder = realTimeSync.subscribe('order_update', (data) => {
       if (data.vendorId === user.id && data.action === 'new_order') {
         console.log('New order received in real-time:', data.order)
-        setRecentOrders(prev => [data.order, ...prev])
-        // Refresh orders from database
+        // Refresh orders from database and sort
         const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-        setRecentOrders(orders)
+        const sortedOrders = orders.sort((a, b) => {
+          const dateA = new Date(a.orderDate || a.id)
+          const dateB = new Date(b.orderDate || b.id)
+          return dateB - dateA
+        })
+        setRecentOrders(sortedOrders)
       }
     })
 
     const unsubscribeDelivery = realTimeSync.subscribe('delivery_update', (data) => {
       if (data.vendorId === user.id || data.customerId === user.id) {
         console.log('Delivery update received:', data.delivery)
-        // Refresh orders from database
+        // Refresh orders from database and sort
         const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-        setRecentOrders(orders)
+        const sortedOrders = orders.sort((a, b) => {
+          const dateA = new Date(a.orderDate || a.id)
+          const dateB = new Date(b.orderDate || b.id)
+          return dateB - dateA
+        })
+        setRecentOrders(sortedOrders)
       }
     })
 
@@ -60,7 +75,12 @@ const Profile = () => {
         // Small delay to ensure delivery record is created first
         setTimeout(() => {
           const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-          setRecentOrders(orders)
+          const sortedOrders = orders.sort((a, b) => {
+            const dateA = new Date(a.orderDate || a.id)
+            const dateB = new Date(b.orderDate || b.id)
+            return dateB - dateA
+          })
+          setRecentOrders(sortedOrders)
         }, 100)
       }
     })
