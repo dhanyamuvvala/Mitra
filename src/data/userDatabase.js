@@ -915,8 +915,8 @@ export const deliveriesDatabase = {
       id: Date.now(),
       orderId: 'ORD' + Math.floor(1000 + Math.random() * 9000),
       ...delivery,
-      status: 'in-transit',
-      deliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 2 days from now
+      status: 'delivered',
+      deliveryDate: new Date().toISOString().split('T')[0] // delivered today
     }
     deliveriesDatabase.deliveries.push(newDelivery)
     localStorage.setItem('vendorMitraDeliveries', JSON.stringify(deliveriesDatabase.deliveries))
