@@ -356,20 +356,6 @@ const Profile = () => {
                                     )}
                                   </div>
                                   
-                                  {/* Write Review Button for each product */}
-                                  {order.status === 'delivered' && (
-                                    <button
-                                      onClick={() => setSelectedProductForReview({
-                                        ...product,
-                                        orderId: order.orderId || order.id,
-                                        supplierId: order.supplierId,
-                                        supplierName: order.supplier
-                                      })}
-                                      className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md font-medium mt-2 transition-colors"
-                                    >
-                                      ✍️ Write Review
-                                    </button>
-                                  )}
                                 </div>
                               </div>
                             )
