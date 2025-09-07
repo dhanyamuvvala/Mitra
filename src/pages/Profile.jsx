@@ -41,10 +41,11 @@ const Profile = () => {
   useEffect(() => {
     if (!user?.id) return
 
-    const unsubscribeOrder = realTimeSync.subscribe('order_update', (data) => {
-      if (data.vendorId === user.id && data.action === 'new_order') {
-        console.log('New order received in real-time:', data.order)
-        // Refresh orders from database and sort
+    let refreshTimeout
+    const refreshOrders = () => {
+      // Debounce multiple rapid updates to prevent duplicates
+      clearTimeout(refreshTimeout)
+      refreshTimeout = setTimeout(() => {
         const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
         const sortedOrders = orders.sort((a, b) => {
           const dateA = new Date(a.orderDate || a.id)
@@ -52,43 +53,27 @@ const Profile = () => {
           return dateB - dateA
         })
         setRecentOrders(sortedOrders)
-      }
-    })
+      }, 50)
+    }
 
-    const unsubscribeDelivery = realTimeSync.subscribe('delivery_update', (data) => {
-      if (data.vendorId === user.id || data.customerId === user.id) {
-        console.log('Delivery update received:', data.delivery)
-        // Refresh orders from database and sort
-        const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-        const sortedOrders = orders.sort((a, b) => {
-          const dateA = new Date(a.orderDate || a.id)
-          const dateB = new Date(b.orderDate || b.id)
-          return dateB - dateA
-        })
-        setRecentOrders(sortedOrders)
-      }
-    })
-
-    // Also listen for purchase events that might create new deliveries
+    // Only listen to stock updates (since purchases create both delivery and stock events)
     const unsubscribePurchase = realTimeSync.subscribe('stock_update', (data) => {
       if (data.action === 'purchase') {
-        // Small delay to ensure delivery record is created first
-        setTimeout(() => {
-          const orders = deliveriesDatabase.getDeliveriesByVendor(user.id)
-          const sortedOrders = orders.sort((a, b) => {
-            const dateA = new Date(a.orderDate || a.id)
-            const dateB = new Date(b.orderDate || b.id)
-            return dateB - dateA
-          })
-          setRecentOrders(sortedOrders)
-        }, 100)
+        refreshOrders()
+      }
+    })
+
+    // Listen for delivery status changes (like delivered status updates)
+    const unsubscribeDelivery = realTimeSync.subscribe('delivery_update', (data) => {
+      if (data.vendorId === user.id || data.customerId === user.id) {
+        refreshOrders()
       }
     })
 
     return () => {
-      unsubscribeOrder()
-      unsubscribeDelivery()
+      clearTimeout(refreshTimeout)
       unsubscribePurchase()
+      unsubscribeDelivery()
     }
   }, [user?.id])
 
